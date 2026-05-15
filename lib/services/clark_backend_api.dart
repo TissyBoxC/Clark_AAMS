@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:mime/mime.dart';
 
 import '../config/backend_config.dart';
 import '../models/app_version.dart';
@@ -16,6 +19,7 @@ class ClarkBackendApi {
   final http.Client _client;
 
   static const _timeout = Duration(seconds: 20);
+  static const _ocrTimeout = Duration(seconds: 180);
 
   Future<List<School>> getSchools() async {
     final data = await _get('/api/v1/schools');
@@ -64,19 +68,68 @@ class ClarkBackendApi {
     if (coursesJson is! List) {
       throw const ApiException(50003, '课表数据响应格式错误');
     }
-    return [
-      for (var index = 0; index < coursesJson.length; index++)
-        if (coursesJson[index] is Map<String, Object?>)
-          Course.fromJson(
-            coursesJson[index] as Map<String, Object?>,
-            fallbackId: index + 1,
-          )
-        else if (coursesJson[index] is Map)
-          Course.fromJson(
-            (coursesJson[index] as Map).cast<String, Object?>(),
-            fallbackId: index + 1,
-          ),
-    ];
+    return _parseCourseList(coursesJson);
+  }
+
+  Future<CoursePickupResult> recognizeCourseImages(List<File> images) async {
+    if (images.isEmpty) {
+      throw const ApiException(40001, '请先选择课表图片');
+    }
+
+    final request = http.MultipartRequest(
+      'POST',
+      BackendConfig.uri('/api/v1/course-pickups'),
+    );
+    for (final image in images) {
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'images',
+          image.path,
+          contentType: _imageContentType(image.path),
+        ),
+      );
+    }
+
+    final streamed = await _client.send(request).timeout(_ocrTimeout);
+    final response = await http.Response.fromStream(streamed);
+    final data = _unwrap(response);
+    if (data is! Map) {
+      throw const ApiException(50003, 'OCR响应格式错误');
+    }
+
+    final pickupCode = data['pickupCode'] as String? ?? '';
+    final coursesJson = data['courses'];
+    if (pickupCode.isEmpty || coursesJson is! List) {
+      throw const ApiException(50003, 'OCR课程数据响应格式错误');
+    }
+
+    return CoursePickupResult(
+      pickupCode: pickupCode,
+      courses: _parseCourseList(coursesJson),
+    );
+  }
+
+  Future<List<Course>> getCoursesByPickupCode(String code) async {
+    final normalized = code.trim().toUpperCase();
+    if (normalized.length != 8) {
+      throw const ApiException(40001, '请输入8位取件码');
+    }
+
+    final response = await _client
+        .get(BackendConfig.uri('/api/v1/course-pickups/$normalized'))
+        .timeout(_timeout);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        response.statusCode,
+        _responseErrorMessage(response, '取件码获取失败：HTTP ${response.statusCode}'),
+      );
+    }
+
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    if (decoded is! List) {
+      throw const ApiException(50003, '取件码课程数据格式错误');
+    }
+    return _parseCourseList(decoded);
   }
 
   Future<AppVersionInfo> checkVersion({
@@ -123,7 +176,7 @@ class ClarkBackendApi {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         response.statusCode,
-        '后端请求失败：HTTP ${response.statusCode}',
+        _responseErrorMessage(response, '后端请求失败：HTTP ${response.statusCode}'),
       );
     }
 
@@ -140,6 +193,85 @@ class ClarkBackendApi {
     return decoded['data'];
   }
 
+  String _responseErrorMessage(http.Response response, String fallback) {
+    final body = utf8.decode(response.bodyBytes).trim();
+    if (body.isEmpty) {
+      return fallback;
+    }
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map) {
+        final message = decoded['message'];
+        if (message is String && message.trim().isNotEmpty) {
+          return message.trim();
+        }
+      }
+    } catch (_) {
+      // Fall through to a short raw response body below.
+    }
+    return body.length > 160 ? fallback : body;
+  }
+
+  MediaType _imageContentType(String path) {
+    final mimeType =
+        lookupMimeType(path, headerBytes: _fileHeaderBytes(path)) ??
+        _mimeTypeFromExtension(path);
+    return MediaType.parse(mimeType);
+  }
+
+  List<int>? _fileHeaderBytes(String path) {
+    try {
+      final file = File(path).openSync();
+      try {
+        final length = file.lengthSync();
+        if (length <= 0) {
+          return null;
+        }
+        return file.readSync(length < 32 ? length : 32);
+      } finally {
+        file.closeSync();
+      }
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _mimeTypeFromExtension(String path) {
+    final lower = path.toLowerCase();
+    if (lower.endsWith('.png')) {
+      return 'image/png';
+    }
+    if (lower.endsWith('.webp')) {
+      return 'image/webp';
+    }
+    if (lower.endsWith('.gif')) {
+      return 'image/gif';
+    }
+    if (lower.endsWith('.heic')) {
+      return 'image/heic';
+    }
+    if (lower.endsWith('.heif')) {
+      return 'image/heif';
+    }
+    return 'image/jpeg';
+  }
+
+  List<Course> _parseCourseList(List coursesJson) {
+    return [
+      for (var index = 0; index < coursesJson.length; index++)
+        if (coursesJson[index] is Map<String, Object?>)
+          Course.fromJson(
+            coursesJson[index] as Map<String, Object?>,
+            fallbackId: index + 1,
+          )
+        else if (coursesJson[index] is Map)
+          Course.fromJson(
+            (coursesJson[index] as Map).cast<String, Object?>(),
+            fallbackId: index + 1,
+          ),
+    ];
+  }
+
   static int? _asInt(Object? value) {
     if (value is int) {
       return value;
@@ -152,6 +284,13 @@ class ClarkBackendApi {
     }
     return null;
   }
+}
+
+class CoursePickupResult {
+  const CoursePickupResult({required this.pickupCode, required this.courses});
+
+  final String pickupCode;
+  final List<Course> courses;
 }
 
 class ApiException implements Exception {

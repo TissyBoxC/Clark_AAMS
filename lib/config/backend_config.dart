@@ -1,11 +1,11 @@
 class BackendConfig {
   const BackendConfig._();
 
-  static const String scheme = 'http';
-  static const String serverIp = '118.25.131.69';
-  static const int serverPort = 8080;
+  static const String scheme = 'https';
+  static const String host = 'clarkhub.cn';
+  static const int? serverPort = null;
 
-  static String get baseUrl => '$scheme://$serverIp:$serverPort';
+  static String get baseUrl => '$scheme://$host';
 
   static Uri uri(
     String path, [
@@ -22,7 +22,7 @@ class BackendConfig {
 
     return Uri(
       scheme: scheme,
-      host: serverIp,
+      host: host,
       port: serverPort,
       path: normalizedPath,
       queryParameters: query.isEmpty ? null : query,

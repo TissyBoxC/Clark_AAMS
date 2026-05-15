@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../models/course.dart';
 import '../models/school.dart';
@@ -367,9 +370,9 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
 
     switch (method) {
       case _ImportMethod.ocr:
-        _showUnavailable('OCR导入暂未配置');
+        await _importFromOcr();
       case _ImportMethod.pickupCode:
-        _showUnavailable('取件码导入暂未配置');
+        await _importFromPickupCode();
       case _ImportMethod.academic:
         await _importFromAcademicSystem(school);
       case null:
@@ -378,6 +381,135 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
         }
         return;
     }
+  }
+
+  Future<void> _importFromOcr() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickMultiImage(imageQuality: 92);
+    if (picked.isEmpty) {
+      return;
+    }
+
+    _showBlockingMessage('正在上传图片并识别，请稍候');
+    try {
+      final result = await ClarkBackendApi.instance.recognizeCourseImages(
+        picked.map((item) => File(item.path)).toList(),
+      );
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pop();
+
+      await _showPickupCodeResult(result.pickupCode);
+      if (!mounted) {
+        return;
+      }
+      if (result.courses.isEmpty) {
+        _showUnavailable('未识别到课程');
+        return;
+      }
+      final imported = await _importCoursesAndSetTermStart(result.courses);
+      if (mounted && imported) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('成功导入 ${result.courses.length} 门课程')),
+        );
+      }
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pop();
+      _showUnavailable('OCR导入失败：$error');
+    }
+  }
+
+  Future<void> _showPickupCodeResult(String pickupCode) {
+    return showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('识别完成'),
+          content: SelectableText('取件码：$pickupCode'),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: pickupCode));
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                }
+              },
+              child: const Text('复制取件码'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('继续导入'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _importFromPickupCode() async {
+    final code = await showDialog<String>(
+      context: context,
+      builder: (context) => const _PickupCodeDialog(),
+    );
+    if (code == null || code.isEmpty) {
+      return;
+    }
+
+    _showBlockingMessage('正在获取课程，请稍候');
+    try {
+      final courses = await ClarkBackendApi.instance.getCoursesByPickupCode(
+        code,
+      );
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pop();
+      if (courses.isEmpty) {
+        _showUnavailable('取件码没有对应课程');
+        return;
+      }
+      final imported = await _importCoursesAndSetTermStart(courses);
+      if (mounted && imported) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('成功导入 ${courses.length} 门课程')));
+      }
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pop();
+      _showUnavailable('取件码导入失败：$error');
+    }
+  }
+
+  void _showBlockingMessage(String message) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return PopScope(
+          canPop: false,
+          child: AlertDialog(
+            content: Row(
+              children: [
+                const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                ),
+                const SizedBox(width: 16),
+                Expanded(child: Text(message)),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   bool _canUseAcademicImport(School school) {
@@ -1024,6 +1156,58 @@ class _ColorDot extends StatelessWidget {
       width: 18,
       height: 18,
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
+  }
+}
+
+class _PickupCodeDialog extends StatefulWidget {
+  const _PickupCodeDialog();
+
+  @override
+  State<_PickupCodeDialog> createState() => _PickupCodeDialogState();
+}
+
+class _PickupCodeDialogState extends State<_PickupCodeDialog> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('输入取件码'),
+      content: TextField(
+        controller: _controller,
+        maxLength: 8,
+        textCapitalization: TextCapitalization.characters,
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
+          hintText: '例如 A7K9Q2TX',
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          onPressed: () {
+            final code = _controller.text.trim().toUpperCase();
+            if (code.length != 8) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('请输入8位取件码')));
+              return;
+            }
+            Navigator.of(context).pop(code);
+          },
+          child: const Text('导入'),
+        ),
+      ],
     );
   }
 }

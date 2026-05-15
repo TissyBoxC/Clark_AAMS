@@ -414,6 +414,8 @@ class _ScheduleTable extends StatelessWidget {
 class _DayColumn extends StatelessWidget {
   const _DayColumn({required this.courses, required this.maxLessons});
 
+  static const _slotHeight = 64.0;
+
   final List<Course> courses;
   final int maxLessons;
 
@@ -421,41 +423,37 @@ class _DayColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     final sorted = [...courses]
       ..sort((a, b) => a.startLesson.compareTo(b.startLesson));
-    final children = <Widget>[];
-    var currentLesson = 1;
-    for (final course in sorted) {
-      if (course.startLesson > currentLesson) {
-        children.add(
-          _EmptyLessonBlock(duration: course.startLesson - currentLesson),
-        );
-      }
-      children.add(_CourseBlock(course: course));
-      currentLesson = course.endLesson + 1;
-    }
-    if (currentLesson <= maxLessons) {
-      children.add(_EmptyLessonBlock(duration: maxLessons - currentLesson + 1));
-    }
-    return Column(children: children);
+    return SizedBox(
+      height: _slotHeight * maxLessons,
+      child: Stack(
+        children: [
+          for (final course in sorted)
+            if (course.startLesson <= maxLessons && course.endLesson >= 1)
+              Positioned(
+                left: 0,
+                right: 0,
+                top: _topFor(course),
+                height: _heightFor(course),
+                child: _CourseBlock(course: course),
+              ),
+        ],
+      ),
+    );
   }
-}
 
-class _EmptyLessonBlock extends StatelessWidget {
-  const _EmptyLessonBlock({required this.duration});
+  double _topFor(Course course) {
+    return (course.startLesson.clamp(1, maxLessons).toInt() - 1) * _slotHeight;
+  }
 
-  static const _slotHeight = 64.0;
-
-  final int duration;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(height: _slotHeight * duration);
+  double _heightFor(Course course) {
+    final start = course.startLesson.clamp(1, maxLessons).toInt();
+    final end = course.endLesson.clamp(1, maxLessons).toInt();
+    return (end - start + 1) * _slotHeight;
   }
 }
 
 class _CourseBlock extends StatelessWidget {
   const _CourseBlock({required this.course});
-
-  static const _slotHeight = 64.0;
 
   final Course course;
 
@@ -466,9 +464,10 @@ class _CourseBlock extends StatelessWidget {
     final foreground = color.computeLuminance() > 0.65
         ? Colors.black87
         : Colors.white;
+    final location = course.location.trim();
+    final showLocation = course.duration > 1 && location.isNotEmpty;
 
     return Container(
-      height: _slotHeight * course.duration,
       margin: const EdgeInsets.fromLTRB(2, 2, 2, 2),
       child: Material(
         color: color,
@@ -478,16 +477,35 @@ class _CourseBlock extends StatelessWidget {
           onTap: () => _showLessonInfo(context, store.settings, course),
           child: Padding(
             padding: const EdgeInsets.all(5),
-            child: Text(
-              '${course.name} - \n${course.location}',
-              maxLines: course.duration * 3,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: foreground,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                height: 1.18,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  course.name,
+                  maxLines: showLocation ? 2 : course.duration * 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: foreground,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    height: 1.18,
+                  ),
+                ),
+                if (showLocation) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    location,
+                    maxLines: course.duration * 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: foreground.withAlpha(220),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      height: 1.15,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ),
