@@ -64,6 +64,14 @@ class ClassScheduleStore extends ChangeNotifier {
       }
     }
 
+    if (settings.hasSpecificSchool &&
+        !settings.isFirstLaunch &&
+        courses.isEmpty &&
+        settings.termStartDate.isEmpty) {
+      settings = settings.copyWith(schoolId: '', isFirstLaunch: true);
+      await prefs.setString(_settingsKey, jsonEncode(settings.toJson()));
+    }
+
     return ClassScheduleStore._(prefs, settings, courses);
   }
 
@@ -73,7 +81,28 @@ class ClassScheduleStore extends ChangeNotifier {
   }
 
   Future<void> selectSchool(String schoolId) async {
-    settings = settings.copyWith(schoolId: schoolId, isFirstLaunch: false);
+    settings = settings.copyWith(
+      schoolId: schoolId,
+      isFirstLaunch: schoolId.isEmpty
+          ? true
+          : _courses.isNotEmpty
+          ? false
+          : settings.isFirstLaunch,
+    );
+    await _saveSettings();
+  }
+
+  Future<void> useOtherImportMethods() async {
+    settings = settings.copyWith(
+      schoolId: AppSettingsModel.unspecifiedSchoolId,
+      isFirstLaunch: false,
+    );
+    await _saveSettings();
+  }
+
+  Future<void> resetSchoolSelection() async {
+    await clearCourses();
+    settings = settings.copyWith(schoolId: '', isFirstLaunch: true);
     await _saveSettings();
   }
 
@@ -83,8 +112,16 @@ class ClassScheduleStore extends ChangeNotifier {
   }
 
   Future<void> resetSettings() async {
-    settings = AppSettingsModel.defaults.copyWith(isFirstLaunch: false);
+    await clearCourses();
+    settings = AppSettingsModel.defaults;
     await _saveSettings();
+  }
+
+  Future<void> clearCourses() async {
+    _courses = const <Course>[];
+    await _prefs.remove(_coursesKey);
+    await _prefs.remove(_nextCourseIdKey);
+    notifyListeners();
   }
 
   Future<void> addCourse(Course course) async {

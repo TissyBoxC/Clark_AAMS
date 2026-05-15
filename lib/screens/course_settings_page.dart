@@ -3,13 +3,15 @@ import 'package:flutter/services.dart';
 
 import '../models/course.dart';
 import '../models/school.dart';
+import '../screens/academic_import_page.dart';
+import '../services/clark_backend_api.dart';
+import '../services/course_json_importer.dart';
 import '../services/schedule_scope.dart';
 import '../services/schedule_utils.dart';
-import '../schools/jit/jit_academic_import_page.dart';
-import '../schools/jit/jit_course_importer.dart';
 import '../widgets/course_form_dialog.dart';
 import '../widgets/top_bar.dart';
 import 'home_page.dart';
+import 'welcome_page.dart';
 
 class CourseSettingsPage extends StatefulWidget {
   const CourseSettingsPage({super.key});
@@ -62,7 +64,7 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
                         itemBuilder: (context) => const [
                           PopupMenuItem(
                             value: _CourseMenu.importSchedule,
-                            child: Text('导入课表'),
+                            child: Text('导入课程'),
                           ),
                           PopupMenuItem(
                             value: _CourseMenu.batchAdd,
@@ -75,14 +77,14 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
                         ],
                       ),
               ),
-                  Expanded(
-                    child: courses.isEmpty
-                        ? const Center(
-                            child: Text(
-                              '点击右上角选择导入方式',
-                              style: TextStyle(color: Color(0xff808080)),
-                            ),
-                          )
+              Expanded(
+                child: courses.isEmpty
+                    ? const Center(
+                        child: Text(
+                          '点击右上角选择导入课程',
+                          style: TextStyle(color: Color(0xff808080)),
+                        ),
+                      )
                     : ListView.builder(
                         padding: EdgeInsets.fromLTRB(
                           10,
@@ -148,13 +150,19 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
   }
 
   void _goBack() {
+    final store = ScheduleScope.of(context);
     final navigator = Navigator.of(context);
     if (navigator.canPop()) {
       navigator.pop();
       return;
     }
     navigator.pushReplacement(
-      MaterialPageRoute(builder: (_) => const HomePage()),
+      MaterialPageRoute(
+        builder: (_) =>
+            store.settings.schoolId.isEmpty || store.settings.isFirstLaunch
+            ? const WelcomePage()
+            : const HomePage(),
+      ),
     );
   }
 
@@ -180,6 +188,9 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
           colorValue: ScheduleUtils.defaultColorForName(result.name).toARGB32(),
         ),
       );
+      if (store.settings.isFirstLaunch) {
+        await store.markLaunched();
+      }
     } else {
       final keepParsedWeeks =
           result.startWeek == course.startWeek &&
@@ -311,43 +322,42 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
 
   Future<void> _showImportMethodSheet() async {
     final store = ScheduleScope.of(context);
-    final school = SchoolCatalog.byId(store.settings.schoolId);
+    School? school;
+    if (store.settings.hasSpecificSchool) {
+      school = await _loadSelectedSchool(store.settings.schoolId);
+      if (!mounted) {
+        return;
+      }
+    }
     final method = await showModalBottomSheet<_ImportMethod>(
       context: context,
       showDragHandle: true,
       builder: (context) {
+        final academicSubtitle = school == null
+            ? '需先选择支持教务系统导入的学校'
+            : '${school.name}(${school.shortName})';
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.data_object),
-                title: const Text('手动填入JSON'),
-                subtitle: const Text('粘贴 courses.json 同结构内容'),
-                onTap: () =>
-                    Navigator.of(context).pop(_ImportMethod.manualJson),
+                leading: const Icon(Icons.document_scanner),
+                title: const Text('使用OCR导入'),
+                subtitle: const Text('识别课表图片后导入课程'),
+                onTap: () => Navigator.of(context).pop(_ImportMethod.ocr),
               ),
               ListTile(
-                enabled: school?.supportsAcademicImport == true,
+                leading: const Icon(Icons.key),
+                title: const Text('使用取件码导入'),
+                subtitle: const Text('输入取件码获取课程数据'),
+                onTap: () =>
+                    Navigator.of(context).pop(_ImportMethod.pickupCode),
+              ),
+              ListTile(
                 leading: const Icon(Icons.public),
                 title: const Text('教务系统导入'),
-                subtitle: Text(
-                  school?.supportsAcademicImport == true
-                      ? '${school!.name}(${school.shortName})'
-                      : '当前学校未配置教务系统导入方法',
-                ),
-                onTap: school?.supportsAcademicImport == true
-                    ? () => Navigator.of(context).pop(_ImportMethod.academic)
-                    : null,
-              ),
-              ListTile(
-                enabled: school?.supportsImageRecognition == true,
-                leading: const Icon(Icons.image_search),
-                title: const Text('图片识别'),
-                subtitle: const Text('识别图片为JSON后导入，当前未配置识别引擎'),
-                onTap: school?.supportsImageRecognition == true
-                    ? () => Navigator.of(context).pop(_ImportMethod.image)
-                    : null,
+                subtitle: Text(academicSubtitle),
+                onTap: () => Navigator.of(context).pop(_ImportMethod.academic),
               ),
             ],
           ),
@@ -356,27 +366,53 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
     );
 
     switch (method) {
-      case _ImportMethod.manualJson:
-        await _showBatchAddDialog();
+      case _ImportMethod.ocr:
+        _showUnavailable('OCR导入暂未配置');
+      case _ImportMethod.pickupCode:
+        _showUnavailable('取件码导入暂未配置');
       case _ImportMethod.academic:
         await _importFromAcademicSystem(school);
-      case _ImportMethod.image:
-        _showUnavailable('图片识别暂未配置');
       case null:
+        if (store.settings.isFirstLaunch && store.courses.isEmpty) {
+          await _resetSchoolSelection();
+        }
         return;
     }
   }
 
+  bool _canUseAcademicImport(School school) {
+    return school.supportsAcademicImport &&
+        school.login.mode == 'webview' &&
+        school.login.loginUrl.isNotEmpty;
+  }
+
+  Future<School?> _loadSelectedSchool(String schoolId) async {
+    if (schoolId.isEmpty) {
+      _showUnavailable('请先选择学校');
+      return null;
+    }
+    try {
+      return await ClarkBackendApi.instance.getSchool(schoolId);
+    } catch (error) {
+      _showUnavailable('学校配置加载失败：$error');
+      return null;
+    }
+  }
+
   Future<void> _importFromAcademicSystem(School? school) async {
-    if (school?.id != SchoolCatalog.jit.id) {
+    if (school == null || !_canUseAcademicImport(school)) {
       _showUnavailable('当前学校未配置教务系统导入方法');
       return;
     }
 
     final courses = await Navigator.of(context).push<List<Course>>(
-      MaterialPageRoute(builder: (_) => const JitAcademicImportPage()),
+      MaterialPageRoute(builder: (_) => AcademicImportPage(school: school)),
     );
-    if (courses == null || courses.isEmpty) {
+    if (courses == null) {
+      await _resetSchoolSelection();
+      return;
+    }
+    if (courses.isEmpty) {
       return;
     }
     final imported = await _importCoursesAndSetTermStart(courses);
@@ -389,6 +425,18 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('成功导入 ${courses.length} 门课程')));
+  }
+
+  Future<void> _resetSchoolSelection() async {
+    final store = ScheduleScope.of(context);
+    await store.resetSchoolSelection();
+    if (!mounted) {
+      return;
+    }
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const WelcomePage()),
+      (route) => false,
+    );
   }
 
   void _showUnavailable(String message) {
@@ -416,6 +464,7 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
     await store.importCourses(customizedCourses);
     await store.updateSettings(
       store.settings.copyWith(
+        isFirstLaunch: false,
         termStartDate: ScheduleUtils.formatDate(termStartDate),
         termMonth: termStartDate.month,
         termDay: termStartDate.day,
@@ -462,7 +511,7 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
 
 enum _CourseMenu { importSchedule, batchAdd, batchDelete }
 
-enum _ImportMethod { manualJson, academic, image }
+enum _ImportMethod { ocr, pickupCode, academic }
 
 class _CourseListCard extends StatelessWidget {
   const _CourseListCard({
@@ -757,7 +806,7 @@ class _BatchAddDialogState extends State<_BatchAddDialog> {
 
   void _save() {
     try {
-      final courses = JitCourseImporter.parse(_controller.text);
+      final courses = CourseJsonImporter.parse(_controller.text);
       Navigator.of(context).pop(courses);
     } on FormatException catch (error) {
       _toast(error.message);

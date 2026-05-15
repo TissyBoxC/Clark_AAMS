@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../models/app_settings.dart';
+import '../models/school.dart';
+import '../services/clark_backend_api.dart';
 import '../services/schedule_scope.dart';
 import '../services/schedule_utils.dart';
 import '../widgets/top_bar.dart';
+import 'welcome_page.dart';
 
 class AppSettingsPage extends StatefulWidget {
   const AppSettingsPage({super.key});
@@ -14,9 +18,6 @@ class AppSettingsPage extends StatefulWidget {
 
 class _AppSettingsPageState extends State<AppSettingsPage> {
   late TextEditingController _maxWeeksController;
-  late TextEditingController _durationController;
-  late TextEditingController _reminderController;
-  late TextEditingController _startTimesController;
   bool _controllersReady = false;
 
   @override
@@ -32,15 +33,6 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
     }
     final settings = ScheduleScope.of(context).settings;
     _maxWeeksController = TextEditingController(text: '${settings.maxWeeks}');
-    _durationController = TextEditingController(
-      text: '${settings.durationPerLesson}',
-    );
-    _reminderController = TextEditingController(
-      text: '${settings.reminderTime}',
-    );
-    _startTimesController = TextEditingController(
-      text: settings.startTimes.join('\n'),
-    );
     _controllersReady = true;
   }
 
@@ -48,9 +40,6 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
   void dispose() {
     if (_controllersReady) {
       _maxWeeksController.dispose();
-      _durationController.dispose();
-      _reminderController.dispose();
-      _startTimesController.dispose();
     }
     super.dispose();
   }
@@ -74,6 +63,10 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               children: [
+                _SchoolSettingRow(
+                  schoolId: settings.schoolId,
+                  onReselect: _confirmResetSchoolSelection,
+                ),
                 _SettingRow(
                   label: '第一周第一天',
                   trailing: TextButton(
@@ -92,131 +85,6 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
                     width: 140,
                     onSubmitted: (_) => _saveMaxWeeks(),
                   ),
-                ),
-                _SettingRow(
-                  label: '每节课时长',
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _NumberField(
-                        controller: _durationController,
-                        width: 120,
-                        onSubmitted: (_) => _saveDuration(),
-                      ),
-                      const Text('分钟', style: TextStyle(fontSize: 16)),
-                    ],
-                  ),
-                ),
-                _SettingRow(
-                  label: '提前提醒',
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _NumberField(
-                        controller: _reminderController,
-                        width: 120,
-                        onSubmitted: (_) => _saveReminderTime(),
-                      ),
-                      const Text('分钟', style: TextStyle(fontSize: 16)),
-                    ],
-                  ),
-                ),
-                _SettingRow(
-                  label: '提醒方式',
-                  trailing: DropdownButton<int>(
-                    value: settings.remindWay.clamp(
-                      0,
-                      ScheduleUtils.remindWays.length - 1,
-                    ),
-                    items: [
-                      for (
-                        var index = 0;
-                        index < ScheduleUtils.remindWays.length;
-                        index++
-                      )
-                        DropdownMenuItem(
-                          value: index,
-                          child: Text(ScheduleUtils.remindWays[index]),
-                        ),
-                    ],
-                    onChanged: (value) async {
-                      if (value == null) {
-                        return;
-                      }
-                      await store.updateSettings(
-                        settings.copyWith(remindWay: value),
-                      );
-                      if (context.mounted && value != 1) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('移动端权限需要在系统设置中确认')),
-                        );
-                      }
-                    },
-                  ),
-                ),
-                _SettingRow(
-                  label: '闹钟设置',
-                  trailing: DropdownButton<int>(
-                    value: settings.alarmWay.clamp(
-                      0,
-                      ScheduleUtils.alarmWays.length - 1,
-                    ),
-                    items: [
-                      for (
-                        var index = 0;
-                        index < ScheduleUtils.alarmWays.length;
-                        index++
-                      )
-                        DropdownMenuItem(
-                          value: index,
-                          child: Text(ScheduleUtils.alarmWays[index]),
-                        ),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) {
-                        store.updateSettings(
-                          settings.copyWith(alarmWay: value),
-                        );
-                      }
-                    },
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 18),
-                  child: Row(
-                    children: [
-                      const Text('课程时间', style: TextStyle(fontSize: 16)),
-                      const Spacer(),
-                      const Text('当前节数'),
-                      const SizedBox(width: 20),
-                      ValueListenableBuilder<TextEditingValue>(
-                        valueListenable: _startTimesController,
-                        builder: (context, value, child) {
-                          final count = value.text
-                              .split('\n')
-                              .map((line) => line.trim())
-                              .where((line) => line.isNotEmpty)
-                              .length;
-                          return Text(
-                            '$count',
-                            style: const TextStyle(color: Color(0xff3174f1)),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _startTimesController,
-                  minLines: 8,
-                  maxLines: 8,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                  ),
-                  onSubmitted: (_) => _saveStartTimes(),
-                  onEditingComplete: _saveStartTimes,
-                  onTapOutside: (_) => _saveStartTimes(),
                 ),
                 _SettingRow(
                   label: '重置设置',
@@ -317,40 +185,36 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
     );
   }
 
-  Future<void> _saveDuration() async {
-    final duration = int.tryParse(_durationController.text);
-    if (duration == null || duration < 1 || duration > 1440) {
-      _toast('请输入正确的课程时长');
-      return;
-    }
+  Future<void> _confirmResetSchoolSelection() async {
     final store = ScheduleScope.of(context);
-    await store.updateSettings(
-      store.settings.copyWith(durationPerLesson: duration),
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('重置学校选择'),
+          content: const Text('确认重新选择学校吗？本地已保存的课程将被删除。'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('确认'),
+            ),
+          ],
+        );
+      },
     );
-  }
-
-  Future<void> _saveReminderTime() async {
-    final reminder = int.tryParse(_reminderController.text);
-    if (reminder == null || reminder < 0 || reminder > 1440) {
-      _toast('请输入正确的提醒时间');
-      return;
+    if (confirmed == true) {
+      await store.resetSchoolSelection();
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const WelcomePage()),
+          (route) => false,
+        );
+      }
     }
-    final store = ScheduleScope.of(context);
-    await store.updateSettings(store.settings.copyWith(reminderTime: reminder));
-  }
-
-  Future<void> _saveStartTimes() async {
-    final times = _startTimesController.text
-        .split('\n')
-        .map((line) => line.trim().replaceAll('：', ':'))
-        .where((line) => line.isNotEmpty)
-        .toList();
-    if (!ScheduleUtils.isTimeListValid(times)) {
-      _toast('请输入正确的开始时间');
-      return;
-    }
-    final store = ScheduleScope.of(context);
-    await store.updateSettings(store.settings.copyWith(startTimes: times));
   }
 
   Future<void> _confirmReset() async {
@@ -360,7 +224,7 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
       builder: (context) {
         return AlertDialog(
           title: const Text('重置设置'),
-          content: const Text('确认重置设置吗（已添加的课程将保留）？'),
+          content: const Text('确认重置设置吗？本地已保存的课程将被删除。'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -381,8 +245,9 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
       await store.resetSettings();
       if (mounted) {
         _toast('设置已重置');
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const AppSettingsPage()),
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const WelcomePage()),
+          (route) => false,
         );
       }
     }
@@ -415,6 +280,87 @@ class _SettingRow extends StatelessWidget {
           trailing,
         ],
       ),
+    );
+  }
+}
+
+class _SchoolSettingRow extends StatelessWidget {
+  const _SchoolSettingRow({required this.schoolId, required this.onReselect});
+
+  final String schoolId;
+  final VoidCallback onReselect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 68),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xffeeeeee))),
+      ),
+      child: Row(
+        children: [
+          const Text('学校信息', style: TextStyle(fontSize: 16)),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: _SchoolInfoText(schoolId: schoolId),
+            ),
+          ),
+          const SizedBox(width: 12),
+          OutlinedButton(
+            onPressed: onReselect,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.black,
+              side: const BorderSide(color: Color(0xff3174f1), width: 1.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+            child: const Text('重选学校', style: TextStyle(fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SchoolInfoText extends StatelessWidget {
+  const _SchoolInfoText({required this.schoolId});
+
+  final String schoolId;
+
+  @override
+  Widget build(BuildContext context) {
+    if (schoolId.isEmpty) {
+      return const Text(
+        '未选择学校',
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(color: Color(0xff808080)),
+      );
+    }
+    if (schoolId == AppSettingsModel.unspecifiedSchoolId) {
+      return const Text(
+        '其他方式导入',
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(color: Color(0xff808080)),
+      );
+    }
+    return FutureBuilder<School>(
+      future: ClarkBackendApi.instance.getSchool(schoolId),
+      builder: (context, snapshot) {
+        final school = snapshot.data;
+        final text = school == null
+            ? schoolId
+            : '${school.name}(${school.shortName})';
+        return Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.right,
+          style: const TextStyle(color: Color(0xff808080)),
+        );
+      },
     );
   }
 }

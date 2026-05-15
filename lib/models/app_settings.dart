@@ -41,6 +41,8 @@ class AppSettingsModel {
     schoolId: '',
   );
 
+  static const unspecifiedSchoolId = '__unspecified_school__';
+
   final int maxWeeks;
   final int durationPerLesson;
   final bool isFirstLaunch;
@@ -52,6 +54,9 @@ class AppSettingsModel {
   final int remindWay;
   final int alarmWay;
   final String schoolId;
+
+  bool get hasSpecificSchool =>
+      schoolId.isNotEmpty && schoolId != unspecifiedSchoolId;
 
   AppSettingsModel copyWith({
     int? maxWeeks,

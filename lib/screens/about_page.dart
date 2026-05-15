@@ -1,9 +1,33 @@
-import 'package:flutter/material.dart';
+import 'dart:io';
 
+import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../models/app_version.dart';
+import '../services/clark_backend_api.dart';
 import '../widgets/top_bar.dart';
 
-class AboutPage extends StatelessWidget {
+class AboutPage extends StatefulWidget {
   const AboutPage({super.key});
+
+  @override
+  State<AboutPage> createState() => _AboutPageState();
+}
+
+class _AboutPageState extends State<AboutPage> {
+  static const _fallbackUpdateUrl = 'https://github.com/TissyBoxC/Clark_AAMS';
+
+  PackageInfo? _packageInfo;
+  AppVersionInfo? _versionInfo;
+  String? _versionError;
+  bool _checkingVersion = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersionInfo();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,50 +42,207 @@ class AboutPage extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Padding(
+            child: ListView(
               padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(22),
-                      child: Image.asset(
-                        'assets/logo/logo.png',
-                        width: 108,
-                        height: 108,
-                        fit: BoxFit.cover,
-                      ),
+              children: [
+                Center(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(22),
+                    child: Image.asset(
+                      'assets/logo/logo.png',
+                      width: 108,
+                      height: 108,
+                      fit: BoxFit.cover,
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    '珂拉课程表',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text('一个用于查看、导入、维护本学期课程安排的本地课表应用。'),
-                  const SizedBox(height: 22),
-                  const _AboutRow(label: '作者', value: 'Provias'),
-                  const _AboutRow(label: '开源协议', value: 'GPL 许可证'),
-                  const _AboutRow(label: '作者QQ', value: '1686886163'),
-                  const _AboutRow(label: '交流QQ群', value: '1046151390'),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '开源仓库',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 6),
-                  const SelectableText(
-                    'https://github.com/TissyBoxC/Clark_AAMS',
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  '珂拉课程表',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                const Text('一个用于查看、导入、维护本学期课程安排的本地课表应用。'),
+                const SizedBox(height: 22),
+                _VersionPanel(
+                  packageInfo: _packageInfo,
+                  versionInfo: _versionInfo,
+                  error: _versionError,
+                  checking: _checkingVersion,
+                  onCheck: _loadVersionInfo,
+                  onUpdate: _openUpdateUrl,
+                ),
+                const SizedBox(height: 22),
+                const _AboutRow(label: '作者', value: 'Provias'),
+                const _AboutRow(label: '开源协议', value: 'GPL 许可证'),
+                const _AboutRow(label: '作者QQ', value: '1686886163'),
+                const _AboutRow(label: '交流QQ群', value: '1046151390'),
+                const SizedBox(height: 8),
+                const Text(
+                  '开源仓库',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 6),
+                const SelectableText(_fallbackUpdateUrl),
+              ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _loadVersionInfo() async {
+    if (_checkingVersion) {
+      return;
+    }
+    setState(() {
+      _checkingVersion = true;
+      _versionError = null;
+    });
+
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final versionInfo = await ClarkBackendApi.instance.checkVersion(
+        platform: Platform.isAndroid
+            ? 'android'
+            : Platform.isIOS
+            ? 'ios'
+            : Platform.operatingSystem,
+        currentVersion: packageInfo.version,
+        currentBuild: int.tryParse(packageInfo.buildNumber),
+        channel: 'stable',
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _packageInfo = packageInfo;
+        _versionInfo = versionInfo;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _versionError = '$error';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _checkingVersion = false);
+      }
+    }
+  }
+
+  Future<void> _openUpdateUrl() async {
+    if (_versionInfo == null && !_checkingVersion) {
+      await _loadVersionInfo();
+    }
+    final source = _versionInfo?.primaryDownloadSource;
+    final url = source?.url.isNotEmpty == true
+        ? source!.url
+        : (_versionInfo?.releasePageUrl.isNotEmpty == true
+              ? _versionInfo!.releasePageUrl
+              : _fallbackUpdateUrl);
+    final uri = Uri.tryParse(url);
+    if (uri == null) {
+      return;
+    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+}
+
+class _VersionPanel extends StatelessWidget {
+  const _VersionPanel({
+    required this.packageInfo,
+    required this.versionInfo,
+    required this.error,
+    required this.checking,
+    required this.onCheck,
+    required this.onUpdate,
+  });
+
+  final PackageInfo? packageInfo;
+  final AppVersionInfo? versionInfo;
+  final String? error;
+  final bool checking;
+  final VoidCallback onCheck;
+  final VoidCallback onUpdate;
+
+  @override
+  Widget build(BuildContext context) {
+    final current = packageInfo == null
+        ? '读取中'
+        : '${packageInfo!.version}+${packageInfo!.buildNumber}';
+    final latest = versionInfo == null
+        ? (checking ? '检查中' : '未知')
+        : _versionLabel(versionInfo!.latestVersion, versionInfo!.latestBuild);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xffe2e8f0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('版本信息', style: TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 12),
+          _AboutRow(label: '当前版本', value: current),
+          _AboutRow(label: '最新版本', value: latest),
+          Text(
+            error == null ? _statusText() : '检查失败：$error',
+            style: TextStyle(
+              color: error == null ? const Color(0xff64748b) : Colors.red,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              OutlinedButton.icon(
+                onPressed: checking ? null : onCheck,
+                icon: checking
+                    ? const SizedBox.square(
+                        dimension: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh, size: 18),
+                label: const Text('检查更新'),
+              ),
+              const SizedBox(width: 12),
+              FilledButton.icon(
+                onPressed: onUpdate,
+                icon: const Icon(Icons.open_in_new, size: 18),
+                label: const Text('手动更新'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _statusText() {
+    final info = versionInfo;
+    if (info == null) {
+      return checking ? '正在检查最新版本' : '尚未获取最新版本';
+    }
+    if (info.forceUpdate || info.updateType == 'required') {
+      return '当前版本低于最低可用版本，需要更新';
+    }
+    if (info.updateAvailable) {
+      return '发现新版本，可手动更新';
+    }
+    return '当前已是最新版本';
+  }
+
+  String _versionLabel(String version, int? build) {
+    if (version.isEmpty) {
+      return '未知';
+    }
+    return build == null ? version : '$version+$build';
   }
 }
 

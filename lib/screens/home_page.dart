@@ -1,13 +1,20 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/app_settings.dart';
+import '../models/app_version.dart';
 import '../models/course.dart';
+import '../services/clark_backend_api.dart';
 import '../services/schedule_scope.dart';
 import '../services/schedule_utils.dart';
 import '../widgets/top_bar.dart';
 import 'about_page.dart';
 import 'app_settings_page.dart';
 import 'course_settings_page.dart';
+import 'welcome_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -20,11 +27,31 @@ class _HomePageState extends State<HomePage> {
   int? _selectedWeek;
   String? _termStartSnapshot;
   bool _askedForTermStart = false;
+  bool _versionCheckStarted = false;
 
   @override
   Widget build(BuildContext context) {
     final store = ScheduleScope.of(context);
     final settings = store.settings;
+    if (settings.schoolId.isEmpty || settings.isFirstLaunch) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const WelcomePage()),
+            (route) => false,
+          );
+        }
+      });
+      return const Scaffold(body: SizedBox.shrink());
+    }
+    if (!_versionCheckStarted) {
+      _versionCheckStarted = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _checkAppVersion();
+        }
+      });
+    }
     final today = DateTime.now();
     if (!_askedForTermStart &&
         settings.termStartDate.isEmpty &&
@@ -50,7 +77,12 @@ class _HomePageState extends State<HomePage> {
       body: Column(
         children: [
           TopBar(
-            title: '课程表',
+            title: '珂拉课程表',
+            titleIcon: Image.asset(
+              'assets/logo/logo.png',
+              width: 28,
+              height: 28,
+            ),
             trailing: PopupMenuButton<_HomeMenu>(
               icon: const Icon(Icons.more_horiz, color: Color(0xff808080)),
               onSelected: (value) {
@@ -78,26 +110,36 @@ class _HomePageState extends State<HomePage> {
           ),
           Center(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
+              width: 180,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(99),
                 border: Border.all(color: const Color(0xffd9e5e2)),
               ),
-              child: DropdownButton<int>(
-                value: week,
-                underline: const SizedBox.shrink(),
-                menuMaxHeight: 170,
-                borderRadius: BorderRadius.circular(10),
-                items: [
-                  for (var value = 1; value <= settings.maxWeeks; value++)
-                    DropdownMenuItem(value: value, child: Text('第 $value 周')),
-                ],
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _selectedWeek = value);
-                  }
-                },
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<int>(
+                  value: week,
+                  isExpanded: true,
+                  menuMaxHeight: 170,
+                  borderRadius: BorderRadius.circular(10),
+                  items: [
+                    for (var value = 1; value <= settings.maxWeeks; value++)
+                      DropdownMenuItem(
+                        value: value,
+                        child: Center(child: Text('第 $value 周')),
+                      ),
+                  ],
+                  selectedItemBuilder: (context) => [
+                    for (var value = 1; value <= settings.maxWeeks; value++)
+                      Center(child: Text('第 $value 周')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => _selectedWeek = value);
+                    }
+                  },
+                ),
               ),
             ),
           ),
@@ -146,6 +188,75 @@ class _HomePageState extends State<HomePage> {
         _termStartSnapshot = null;
       });
     }
+  }
+
+  Future<void> _checkAppVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      final version = await ClarkBackendApi.instance.checkVersion(
+        platform: Platform.isAndroid
+            ? 'android'
+            : Platform.isIOS
+            ? 'ios'
+            : Platform.operatingSystem,
+        currentVersion: info.version,
+        currentBuild: int.tryParse(info.buildNumber),
+        channel: 'stable',
+      );
+      if (!mounted ||
+          !version.updateAvailable ||
+          version.updateType == 'none') {
+        return;
+      }
+      await _showUpdateDialog(version);
+    } catch (_) {
+      // Version checks must not block the timetable when the backend is down.
+    }
+  }
+
+  Future<void> _showUpdateDialog(AppVersionInfo version) {
+    final required = version.forceUpdate || version.updateType == 'required';
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: !required,
+      builder: (context) {
+        final notes = version.releaseNotes.join('\n');
+        final content = [
+          if (version.message.isNotEmpty) version.message,
+          if (notes.isNotEmpty) '\n$notes',
+        ].join('\n');
+        return PopScope(
+          canPop: !required,
+          child: AlertDialog(
+            title: Text(version.title),
+            content: SingleChildScrollView(child: Text(content)),
+            actions: [
+              if (!required)
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('稍后再说'),
+                ),
+              FilledButton(
+                onPressed: () => _openDownload(version),
+                child: const Text('去更新'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openDownload(AppVersionInfo version) async {
+    final source = version.primaryDownloadSource;
+    final url = source?.url.isNotEmpty == true
+        ? source!.url
+        : version.releasePageUrl;
+    final uri = Uri.tryParse(url);
+    if (uri == null) {
+      return;
+    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }
 

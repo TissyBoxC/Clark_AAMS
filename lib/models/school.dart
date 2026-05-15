@@ -5,6 +5,8 @@ class School {
     required this.shortName,
     required this.supportsAcademicImport,
     required this.supportsImageRecognition,
+    required this.login,
+    required this.version,
   });
 
   final String id;
@@ -12,27 +14,66 @@ class School {
   final String shortName;
   final bool supportsAcademicImport;
   final bool supportsImageRecognition;
-}
+  final SchoolLogin login;
+  final int version;
 
-class SchoolCatalog {
-  const SchoolCatalog._();
+  static School fromJson(Map<String, Object?> json) {
+    final capabilities = _asMap(json['capabilities']);
+    return School(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      shortName: json['shortName'] as String? ?? '',
+      supportsAcademicImport: capabilities['academicImport'] as bool? ?? false,
+      supportsImageRecognition:
+          capabilities['imageRecognition'] as bool? ?? false,
+      login: SchoolLogin.fromJson(_asMap(json['login'])),
+      version: _asInt(json['version']) ?? 0,
+    );
+  }
 
-  static const jit = School(
-    id: 'jit',
-    name: '金陵科技学院',
-    shortName: 'JIT',
-    supportsAcademicImport: true,
-    supportsImageRecognition: false,
-  );
+  static Map<String, Object?> _asMap(Object? value) {
+    if (value is Map<String, Object?>) {
+      return value;
+    }
+    if (value is Map) {
+      return value.cast<String, Object?>();
+    }
+    return const <String, Object?>{};
+  }
 
-  static const schools = <School>[jit];
-
-  static School? byId(String id) {
-    for (final school in schools) {
-      if (school.id == id) {
-        return school;
-      }
+  static int? _asInt(Object? value) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    if (value is String) {
+      return int.tryParse(value);
     }
     return null;
+  }
+}
+
+class SchoolLogin {
+  const SchoolLogin({
+    required this.mode,
+    required this.loginUrl,
+    required this.successUrlPatterns,
+  });
+
+  final String mode;
+  final String loginUrl;
+  final List<String> successUrlPatterns;
+
+  static SchoolLogin fromJson(Map<String, Object?> json) {
+    final patterns = json['successUrlPatterns'];
+    return SchoolLogin(
+      mode: json['mode'] as String? ?? '',
+      loginUrl: json['loginUrl'] as String? ?? '',
+      successUrlPatterns: patterns is List
+          ? patterns.whereType<String>().toList()
+          : const <String>[],
+    );
   }
 }

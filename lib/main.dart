@@ -54,7 +54,7 @@ class ClassScheduleApp extends StatelessWidget {
             foregroundColor: Colors.white,
           ),
         ),
-        home: store.settings.isFirstLaunch || store.settings.schoolId.isEmpty
+        home: store.settings.schoolId.isEmpty || store.settings.isFirstLaunch
             ? const WelcomePage()
             : const HomePage(),
       ),
