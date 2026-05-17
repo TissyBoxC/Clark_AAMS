@@ -66,7 +66,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
       body: Column(
         children: [
           TopBar(
-            title: '???????',
+            title: '时间配置',
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => Navigator.of(context).pop(),

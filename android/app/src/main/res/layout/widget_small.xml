@@ -6,12 +6,47 @@
     android:background="@drawable/widget_panel_bg"
     android:clipToPadding="false"
     android:orientation="vertical"
-    android:padding="14dp">
+    android:paddingStart="12dp"
+    android:paddingTop="10dp"
+    android:paddingEnd="12dp"
+    android:paddingBottom="10dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/widget_small_date"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="今天/周六"
+            android:textColor="@color/course_widget_title"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_small_week"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="第11周"
+            android:textColor="@color/course_widget_title"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/widget_small_empty"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:gravity="center_vertical"
         android:orientation="vertical"
         android:visibility="gone">
@@ -21,8 +56,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/course_widget_empty_title"
-            android:textColor="@color/course_widget_primary"
-            android:textSize="15sp"
+            android:textColor="@color/course_widget_title"
+            android:textSize="14sp"
             android:textStyle="bold" />
 
         <TextView
@@ -30,84 +65,66 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:maxLines="2"
             android:ellipsize="end"
+            android:maxLines="2"
             android:text="@string/course_widget_empty_message"
             android:textColor="@color/course_widget_muted"
-            android:textSize="12sp" />
+            android:textSize="11sp" />
     </LinearLayout>
 
     <LinearLayout
         android:id="@+id/widget_small_content"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/widget_small_course_start"
+            android:layout_width="46dp"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:text="08:00"
+            android:textColor="@color/course_widget_time"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="4dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/widget_course_bar"
+            android:text="" />
 
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <View
-                android:layout_width="20dp"
-                android:layout_height="4dp"
-                android:background="@drawable/widget_accent_purple" />
+            android:layout_weight="1"
+            android:orientation="vertical">
 
             <TextView
-                android:id="@+id/widget_small_section"
-                android:layout_width="wrap_content"
+                android:id="@+id/widget_small_course_name"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="@string/course_widget_small_title"
-                android:textColor="@color/course_widget_primary"
-                android:textSize="13sp"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textColor="@color/course_widget_title"
+                android:textSize="14sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_small_course_lesson"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/course_widget_muted"
+                android:textSize="11sp" />
         </LinearLayout>
-
-        <TextView
-            android:id="@+id/widget_small_course_name"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="@color/course_widget_secondary"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/widget_small_course_time"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="@color/course_widget_muted"
-            android:textSize="12sp" />
-
-        <TextView
-            android:id="@+id/widget_small_course_room"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="@color/course_widget_muted"
-            android:textSize="12sp" />
-
-        <TextView
-            android:id="@+id/widget_small_course_remaining"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:background="@drawable/widget_accent_blue"
-            android:paddingStart="8dp"
-            android:paddingTop="4dp"
-            android:paddingEnd="8dp"
-            android:paddingBottom="4dp"
-            android:textColor="@android:color/white"
-            android:textSize="12sp"
-            android:textStyle="bold" />
     </LinearLayout>
 </LinearLayout>

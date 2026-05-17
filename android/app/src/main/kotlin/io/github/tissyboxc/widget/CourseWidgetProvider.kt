@@ -1,6 +1,5 @@
 package io.github.tissyboxc.widget
 
-import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.SharedPreferences
@@ -14,8 +13,11 @@ import io.github.tissyboxc.MainActivity
 import io.github.tissyboxc.R
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.Calendar
 
 open class CourseWidgetProvider : HomeWidgetProvider() {
+    protected open val fixedWidgetSize: WidgetSize? = null
+
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -61,7 +63,11 @@ open class CourseWidgetProvider : HomeWidgetProvider() {
         options: Bundle?,
     ) {
         val payload = WidgetPayload.from(widgetData.getString(WidgetContract.PAYLOAD_KEY, null))
-        val isMedium = isMediumWidget(appWidgetManager, appWidgetId, options)
+        val isMedium = when (fixedWidgetSize) {
+            WidgetSize.SMALL -> false
+            WidgetSize.MEDIUM -> true
+            null -> isMediumWidget(appWidgetManager, appWidgetId, options)
+        }
         val layoutId = if (isMedium) R.layout.widget_medium else R.layout.widget_small
         val views = RemoteViews(context.packageName, layoutId).apply {
             setOnClickPendingIntent(
@@ -85,8 +91,7 @@ open class CourseWidgetProvider : HomeWidgetProvider() {
     ): Boolean {
         val resolved = options ?: appWidgetManager.getAppWidgetOptions(appWidgetId)
         val width = resolved.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH)
-        val height = resolved.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT)
-        return width >= 260 || height >= 170
+        return width >= 260
     }
 
     private fun bindSmall(
@@ -95,21 +100,30 @@ open class CourseWidgetProvider : HomeWidgetProvider() {
         context: Context,
     ) {
         val showContent = state.status == PanelStatus.READY && state.nextCourse != null
+        views.setTextViewText(R.id.widget_small_date, compactDateText(state.dateText.ifBlank { todayHeaderText() }))
+        views.setTextViewText(R.id.widget_small_week, state.weekText)
         views.setViewVisibility(R.id.widget_small_content, if (showContent) View.VISIBLE else View.GONE)
         views.setViewVisibility(R.id.widget_small_empty, if (showContent) View.GONE else View.VISIBLE)
 
         if (showContent) {
             val nextCourse = state.nextCourse ?: return
-            views.setTextViewText(
-                R.id.widget_small_section,
-                context.getString(R.string.course_widget_small_title),
-            )
+            views.setTextViewText(R.id.widget_small_course_start, nextCourse.startTimeText)
             views.setTextViewText(R.id.widget_small_course_name, nextCourse.name)
-            views.setTextViewText(R.id.widget_small_course_time, nextCourse.timeText)
-            views.setTextViewText(R.id.widget_small_course_room, nextCourse.roomText)
-            views.setTextViewText(R.id.widget_small_course_remaining, nextCourse.remainingText)
+            views.setTextViewText(
+                R.id.widget_small_course_lesson,
+                nextCourse.roomText
+                    .takeIf { it.isNotBlank() && it != "教室未填写" }
+                    ?: nextCourse.lessonText.ifBlank { nextCourse.timeText },
+            )
         } else {
-            views.setTextViewText(R.id.widget_small_empty_title, context.getString(R.string.course_widget_empty_title))
+            views.setTextViewText(
+                R.id.widget_small_empty_title,
+                if (state.status == PanelStatus.FINISHED) {
+                    context.getString(R.string.course_widget_finished_title)
+                } else {
+                    context.getString(R.string.course_widget_empty_title)
+                },
+            )
             views.setTextViewText(
                 R.id.widget_small_empty_message,
                 state.message.ifBlank { context.getString(R.string.course_widget_empty_message) },
@@ -123,20 +137,25 @@ open class CourseWidgetProvider : HomeWidgetProvider() {
         context: Context,
     ) {
         val showContent = state.status == PanelStatus.READY && state.courseRows.isNotEmpty()
+        views.setTextViewText(R.id.widget_medium_date, state.dateText.ifBlank { todayHeaderText() })
+        views.setTextViewText(R.id.widget_medium_week, state.weekText)
         views.setViewVisibility(R.id.widget_medium_content, if (showContent) View.VISIBLE else View.GONE)
         views.setViewVisibility(R.id.widget_medium_empty, if (showContent) View.GONE else View.VISIBLE)
 
         if (showContent) {
-            views.setTextViewText(
-                R.id.widget_medium_section,
-                context.getString(R.string.course_widget_medium_title),
-            )
-
             val rows = listOf(
-                RowIds(R.id.widget_medium_row_1, R.id.widget_medium_name_1, R.id.widget_medium_detail_1),
-                RowIds(R.id.widget_medium_row_2, R.id.widget_medium_name_2, R.id.widget_medium_detail_2),
-                RowIds(R.id.widget_medium_row_3, R.id.widget_medium_name_3, R.id.widget_medium_detail_3),
-                RowIds(R.id.widget_medium_row_4, R.id.widget_medium_name_4, R.id.widget_medium_detail_4),
+                RowIds(
+                    R.id.widget_medium_row_1,
+                    R.id.widget_medium_start_1,
+                    R.id.widget_medium_name_1,
+                    R.id.widget_medium_detail_1,
+                ),
+                RowIds(
+                    R.id.widget_medium_row_2,
+                    R.id.widget_medium_start_2,
+                    R.id.widget_medium_name_2,
+                    R.id.widget_medium_detail_2,
+                ),
             )
 
             rows.forEachIndexed { index, rowIds ->
@@ -145,8 +164,9 @@ open class CourseWidgetProvider : HomeWidgetProvider() {
                     views.setViewVisibility(rowIds.containerId, View.GONE)
                 } else {
                     views.setViewVisibility(rowIds.containerId, View.VISIBLE)
+                    views.setTextViewText(rowIds.startId, row.startTimeText)
                     views.setTextViewText(rowIds.nameId, row.name)
-                    views.setTextViewText(rowIds.detailId, "${row.timeText}  ·  ${row.roomText}")
+                    views.setTextViewText(rowIds.detailId, row.lessonDetailText())
                 }
             }
         } else {
@@ -159,7 +179,30 @@ open class CourseWidgetProvider : HomeWidgetProvider() {
     }
 }
 
-class WidgetUpdateReceiver : CourseWidgetProvider()
+private fun todayHeaderText(): String {
+    val weekdays = arrayOf("星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六")
+    val weekday = Calendar.getInstance().get(Calendar.DAY_OF_WEEK)
+    return "今天 / ${weekdays[(weekday - 1).coerceIn(0, weekdays.lastIndex)]}"
+}
+
+private fun compactDateText(raw: String): String {
+    return raw
+        .replace(" / ", "/")
+        .replace("星期", "周")
+}
+
+class WidgetUpdateReceiver : CourseWidgetProvider() {
+    override val fixedWidgetSize = WidgetSize.SMALL
+}
+
+class WidgetMediumReceiver : CourseWidgetProvider() {
+    override val fixedWidgetSize = WidgetSize.MEDIUM
+}
+
+enum class WidgetSize {
+    SMALL,
+    MEDIUM,
+}
 
 private object WidgetContract {
     const val PAYLOAD_KEY = "course_widget_payload"
@@ -197,6 +240,8 @@ private data class WidgetPayload(
 private data class WidgetPanelState(
     val status: PanelStatus,
     val message: String = "",
+    val dateText: String = "",
+    val weekText: String = "",
     val nextCourse: WidgetCourse? = null,
     val courseRows: List<WidgetCourseRow> = emptyList(),
 ) {
@@ -208,9 +253,11 @@ private data class WidgetPanelState(
 
             val status = PanelStatus.from(json.optString("status"))
             val message = json.optString("message")
+            val dateText = json.optString("dateText")
+            val weekText = json.optString("weekText")
             val nextCourse = json.optJSONObject("nextCourse")?.let(WidgetCourse::from)
             val rows = json.optJSONArray("courseRows")?.let(WidgetCourseRow::from) ?: emptyList()
-            return WidgetPanelState(status, message, nextCourse, rows)
+            return WidgetPanelState(status, message, dateText, weekText, nextCourse, rows)
         }
 
         fun empty(): WidgetPanelState {
@@ -246,15 +293,26 @@ private enum class PanelStatus {
 
 private data class WidgetCourse(
     val name: String,
+    val startTimeText: String,
     val timeText: String,
+    val lessonText: String,
     val roomText: String,
     val remainingText: String,
 ) {
+    fun lessonDetailText(): String {
+        return listOf(lessonText, roomText)
+            .filter { it.isNotBlank() && it != "教室未填写" }
+            .joinToString("  ·  ")
+            .ifBlank { timeText }
+    }
+
     companion object {
         fun from(json: JSONObject?): WidgetCourse {
             return WidgetCourse(
                 name = json?.optString("name").orEmpty(),
+                startTimeText = json?.optString("startTimeText").orEmpty(),
                 timeText = json?.optString("timeText").orEmpty(),
+                lessonText = json?.optString("lessonText").orEmpty(),
                 roomText = json?.optString("roomText").orEmpty(),
                 remainingText = json?.optString("remainingText").orEmpty(),
             )
@@ -264,9 +322,18 @@ private data class WidgetCourse(
 
 private data class WidgetCourseRow(
     val name: String,
+    val startTimeText: String,
     val timeText: String,
+    val lessonText: String,
     val roomText: String,
 ) {
+    fun lessonDetailText(): String {
+        return listOf(lessonText, roomText)
+            .filter { it.isNotBlank() && it != "教室未填写" }
+            .joinToString("  ·  ")
+            .ifBlank { timeText }
+    }
+
     companion object {
         fun from(array: JSONArray): List<WidgetCourseRow> {
             val rows = mutableListOf<WidgetCourseRow>()
@@ -279,7 +346,9 @@ private data class WidgetCourseRow(
         private fun from(json: JSONObject?): WidgetCourseRow {
             return WidgetCourseRow(
                 name = json?.optString("name").orEmpty(),
+                startTimeText = json?.optString("startTimeText").orEmpty(),
                 timeText = json?.optString("timeText").orEmpty(),
+                lessonText = json?.optString("lessonText").orEmpty(),
                 roomText = json?.optString("roomText").orEmpty(),
             )
         }
@@ -288,6 +357,7 @@ private data class WidgetCourseRow(
 
 private data class RowIds(
     val containerId: Int,
+    val startId: Int,
     val nameId: Int,
     val detailId: Int,
 )

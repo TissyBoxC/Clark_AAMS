@@ -84,8 +84,14 @@ class ScheduleUtils {
         course.endLesson > settings.startTimes.length) {
       return '';
     }
-    final start = settings.startTimes[course.startLesson - 1];
-    final endStart = settings.startTimes[course.endLesson - 1];
+    final start = settings.startTimes[course.startLesson - 1].replaceAll(
+      '：',
+      ':',
+    );
+    final endStart = settings.startTimes[course.endLesson - 1].replaceAll(
+      '：',
+      ':',
+    );
     if (start.trim().isEmpty || endStart.trim().isEmpty) {
       return '';
     }

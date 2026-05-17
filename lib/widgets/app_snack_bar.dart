@@ -8,6 +8,7 @@ class AppSnackBar {
   static void show(
     BuildContext context,
     String message, {
+    Duration duration = AppSnackBar.duration,
     SnackBarAction? action,
   }) {
     ScaffoldMessenger.of(context)

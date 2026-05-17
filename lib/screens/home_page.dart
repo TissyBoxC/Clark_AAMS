@@ -13,7 +13,6 @@ import '../services/clark_backend_api.dart';
 import '../services/lesson_time_defaults.dart';
 import '../services/schedule_scope.dart';
 import '../services/schedule_utils.dart';
-import '../widget/widget_service.dart';
 import '../widgets/app_snack_bar.dart';
 import '../widgets/top_bar.dart';
 import 'about_page.dart';
@@ -262,22 +261,22 @@ class _IllustratedBottomBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+        padding: const EdgeInsets.fromLTRB(14, 0, 14, 6),
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: Colors.white.withAlpha(240),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: Colors.white, width: 1.5),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x220b0550),
-                blurRadius: 26,
-                offset: Offset(0, 12),
+                color: Color(0x160b0550),
+                blurRadius: 14,
+                offset: Offset(0, 6),
               ),
             ],
           ),
           child: SizedBox(
-            height: 98,
+            height: 54,
             child: Row(
               children: [
                 for (var index = 0; index < _items.length; index++)
@@ -328,14 +327,14 @@ class _NavArtButton extends StatelessWidget {
       selected: selected,
       label: spec.label,
       child: InkWell(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 260),
           curve: Curves.easeOutCubic,
-          margin: EdgeInsets.fromLTRB(6, selected ? 5 : 11, 6, 6),
+          margin: EdgeInsets.fromLTRB(5, selected ? 4 : 7, 5, 4),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(16),
             color: selected
                 ? const Color(0xfff2efff)
                 : Colors.white.withAlpha(0),
@@ -344,10 +343,10 @@ class _NavArtButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(
-                height: 64,
+                height: 28,
                 child: Center(
                   child: AnimatedScale(
-                    scale: selected ? 1.08 : 0.92,
+                    scale: selected ? 1.04 : 0.9,
                     duration: const Duration(milliseconds: 260),
                     curve: Curves.easeOutBack,
                     child: AnimatedOpacity(
@@ -355,7 +354,7 @@ class _NavArtButton extends StatelessWidget {
                       duration: const Duration(milliseconds: 220),
                       child: Image.asset(
                         image,
-                        height: 58,
+                        height: 24,
                         fit: BoxFit.contain,
                         filterQuality: FilterQuality.high,
                       ),
@@ -363,13 +362,13 @@ class _NavArtButton extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 220),
                 curve: Curves.easeOut,
                 style: TextStyle(
                   color: selected ? _lavender : _muted.withAlpha(180),
-                  fontSize: selected ? 12 : 11,
+                  fontSize: selected ? 10 : 9,
                   fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                   height: 1,
                 ),
@@ -394,7 +393,7 @@ class _HomeTab extends StatelessWidget {
     final settings = store.settings;
     final today = DateTime.now();
     final week = ScheduleUtils.currentWeek(settings, today);
-    final todayCourses =
+    final allTodayCourses =
         store.courses
             .where(
               (course) =>
@@ -402,6 +401,10 @@ class _HomeTab extends StatelessWidget {
             )
             .toList()
           ..sort((a, b) => a.startLesson.compareTo(b.startLesson));
+    final todayCourses = allTodayCourses
+        .where((course) => _isCourseNotFinished(settings, course, today))
+        .toList();
+    final todayStatusText = allTodayCourses.isEmpty ? '今天没有课程安排' : '今天的课已经上完了';
 
     return Column(
       children: [
@@ -441,12 +444,12 @@ class _HomeTab extends StatelessWidget {
               const SizedBox(height: 16),
               _SectionTitle(
                 title: '今日课程',
-                action: todayCourses.isEmpty ? null : '查看课表',
-                onAction: todayCourses.isEmpty ? null : onOpenSchedule,
+                action: allTodayCourses.isEmpty ? null : '查看课表',
+                onAction: allTodayCourses.isEmpty ? null : onOpenSchedule,
               ),
               const SizedBox(height: 10),
               if (todayCourses.isEmpty)
-                const _EmptyTodayCard()
+                _EmptyTodayCard(message: todayStatusText)
               else
                 for (final course in todayCourses)
                   _TodayCourseTile(course: course, settings: settings),
@@ -455,6 +458,46 @@ class _HomeTab extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  bool _isCourseNotFinished(
+    AppSettingsModel settings,
+    Course course,
+    DateTime now,
+  ) {
+    final endMinute = _minuteForLesson(settings, course.endLesson);
+    if (endMinute == null) {
+      return true;
+    }
+    final currentMinute = now.hour * 60 + now.minute;
+    return currentMinute <= endMinute;
+  }
+
+  int? _minuteForLesson(AppSettingsModel settings, int lesson) {
+    final index = lesson - 1;
+    if (index < 0 || index >= settings.startTimes.length) {
+      return null;
+    }
+    final raw = settings.startTimes[index].trim().replaceAll('：', ':');
+    if (raw.isEmpty) {
+      return null;
+    }
+    final parts = raw.split(':');
+    if (parts.length != 2) {
+      return null;
+    }
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) {
+      return null;
+    }
+    if (hour < 0 || hour > 24 || minute < 0 || minute > 59) {
+      return null;
+    }
+    if (hour == 24 && minute != 0) {
+      return null;
+    }
+    return hour * 60 + minute + settings.durationPerLesson;
   }
 }
 
@@ -489,7 +532,7 @@ class _HomeHeroCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${_weekLabel(week)} · 今日 $todayCourseCount 节课',
+                  '${_weekLabel(week)} · 今日待上 $todayCourseCount 节课',
                   style: const TextStyle(
                     color: _muted,
                     fontSize: 13,
@@ -624,7 +667,9 @@ class _SectionTitle extends StatelessWidget {
 }
 
 class _EmptyTodayCard extends StatelessWidget {
-  const _EmptyTodayCard();
+  const _EmptyTodayCard({required this.message});
+
+  final String message;
 
   @override
   Widget build(BuildContext context) {
@@ -639,10 +684,10 @@ class _EmptyTodayCard extends StatelessWidget {
             filterQuality: FilterQuality.high,
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Text(
-              '今天没有课程安排',
-              style: TextStyle(
+              message,
+              style: const TextStyle(
                 color: _ink,
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
@@ -699,7 +744,7 @@ class _TodayCourseTile extends StatelessWidget {
                     _lessonRangeLabel(course.startLesson, course.endLesson),
                     if (time.isNotEmpty) time,
                     if (course.location.isNotEmpty) course.location,
-                  ].join(' 路 '),
+                  ].join(' / '),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -877,7 +922,7 @@ class _MineTab extends StatelessWidget {
               _MineActionTile(
                 icon: Icons.widgets_outlined,
                 title: '桌面小组件',
-                subtitle: '添加显示下一节课的桌面卡片',
+                subtitle: '查看不同系统的添加方式',
                 color: const Color(0xff6d64ff),
                 onTap: _pinHomeWidget,
               ),
@@ -917,11 +962,31 @@ class _MineTab extends StatelessWidget {
   }
 
   static Future<void> _pinHomeWidget(BuildContext context) async {
-    final pinned = await WidgetService.pinWidget();
-    if (!context.mounted) {
-      return;
-    }
-    AppSnackBar.show(context, pinned ? '已请求添加桌面小组件' : '请在桌面长按后手动添加小组件');
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('添加小组件'),
+          content: const Text('不同系统添加小组件方式不同，请前往用户手册查看符合你系统的添加方式。'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('关闭'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await launchUrl(
+                  Uri.parse('https://clarkhub.cn'),
+                  mode: LaunchMode.externalApplication,
+                );
+              },
+              child: const Text('前往官网'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   static Future<void> _openChaoxingHomework(BuildContext context) async {

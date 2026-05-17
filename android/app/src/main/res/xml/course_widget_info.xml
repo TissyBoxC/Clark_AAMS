@@ -3,9 +3,9 @@
     android:description="@string/course_widget_description"
     android:initialLayout="@layout/widget_small"
     android:minHeight="110dp"
-    android:minWidth="180dp"
-    android:previewLayout="@layout/widget_medium"
-    android:resizeMode="horizontal|vertical"
+    android:minWidth="110dp"
+    android:previewLayout="@layout/widget_small"
+    android:resizeMode="none"
     android:targetCellHeight="2"
     android:targetCellWidth="2"
     android:widgetCategory="home_screen" />
