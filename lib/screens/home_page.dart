@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/app_settings.dart';
 import '../models/app_version.dart';
 import '../models/course.dart';
+import '../resources/app_strings.dart';
 import '../services/auth_session.dart';
 import '../services/clark_backend_api.dart';
 import '../services/lesson_time_defaults.dart';
@@ -31,9 +32,9 @@ const _cream = Color(0xfffffbff);
 const _panel = Color(0xffffffff);
 const _line = Color(0xffe8e3ff);
 
-String _weekLabel(int week) => '第$week 周';
+String _weekLabel(int week) => AppStrings.homeWeekLabel(week);
 String _lessonRangeLabel(int startLesson, int endLesson) =>
-    '第$startLesson-$endLesson 节';
+    AppStrings.homeLessonRangeLabel(startLesson, endLesson);
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -131,10 +132,10 @@ class _HomePageState extends State<HomePage> {
           initialTermStartDate: DateTime.now(),
           initialStartTimes: defaults.initialStartTimes,
           lessonCount: ScheduleUtils.lessonCount(store.settings, store.courses),
-          title: '设置第一周第一天',
-          subtitle: '设置后即可自动计算当前周数；节次时间可选填，用于桌面小组件判断下一节课。',
-          confirmText: '保存设置',
-          cancelText: '稍后设置',
+          title: AppStrings.setupFirstWeekFirstDayTitle,
+          subtitle: AppStrings.setupFirstWeekFirstDaySubtitle,
+          confirmText: AppStrings.saveSettings,
+          cancelText: AppStrings.setupLater,
           lessonTimeProfiles: defaults.generalProfiles,
           lessonTimeNotice: defaults.notice,
         ),
@@ -203,11 +204,11 @@ class _HomePageState extends State<HomePage> {
               if (!required)
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('稍后再说'),
+                  child: const Text(AppStrings.later),
                 ),
               FilledButton(
                 onPressed: () => _openDownload(version),
-                child: const Text('去更新'),
+                child: const Text(AppStrings.updateNow),
               ),
             ],
           ),
@@ -240,17 +241,17 @@ class _IllustratedBottomBar extends StatelessWidget {
 
   static const _items = <_NavArtSpec>[
     _NavArtSpec(
-      label: '首页',
+      label: AppStrings.homeTab,
       idleAsset: 'assets/nav/nav_home_idle.png',
       activeAsset: 'assets/nav/nav_home_active.png',
     ),
     _NavArtSpec(
-      label: '课程表',
+      label: AppStrings.scheduleTab,
       idleAsset: 'assets/nav/nav_schedule_idle.png',
       activeAsset: 'assets/nav/nav_schedule_active.png',
     ),
     _NavArtSpec(
-      label: '我的',
+      label: AppStrings.mineTab,
       idleAsset: 'assets/nav/nav_mine_idle.png',
       activeAsset: 'assets/nav/nav_mine_active.png',
     ),
@@ -404,12 +405,14 @@ class _HomeTab extends StatelessWidget {
     final todayCourses = allTodayCourses
         .where((course) => _isCourseNotFinished(settings, course, today))
         .toList();
-    final todayStatusText = allTodayCourses.isEmpty ? '今天没有课程安排' : '今天的课已经上完了';
+    final todayStatusText = allTodayCourses.isEmpty
+        ? AppStrings.noCoursesToday
+        : AppStrings.coursesFinishedToday;
 
     return Column(
       children: [
         TopBar(
-          title: '珂拉课程表',
+          title: AppStrings.appName,
           titleIcon: Image.asset('assets/logo/logo.png', width: 28, height: 28),
         ),
         Expanded(
@@ -426,7 +429,7 @@ class _HomeTab extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _MetricTile(
-                      label: '课程总数',
+                      label: AppStrings.courseCount,
                       value: '${store.courses.length}',
                       color: _lavender,
                     ),
@@ -434,7 +437,7 @@ class _HomeTab extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _MetricTile(
-                      label: '本周',
+                      label: AppStrings.currentWeekLabel,
                       value: _weekLabel(week),
                       color: _pink,
                     ),
@@ -443,8 +446,10 @@ class _HomeTab extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               _SectionTitle(
-                title: '今日课程',
-                action: allTodayCourses.isEmpty ? null : '查看课表',
+                title: AppStrings.todayCourses,
+                action: allTodayCourses.isEmpty
+                    ? null
+                    : AppStrings.viewSchedule,
                 onAction: allTodayCourses.isEmpty ? null : onOpenSchedule,
               ),
               const SizedBox(height: 10),
@@ -523,7 +528,7 @@ class _HomeHeroCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  '今天也要稳稳上课',
+                  AppStrings.homeHeroTitle,
                   style: TextStyle(
                     color: _ink,
                     fontSize: 22,
@@ -532,7 +537,10 @@ class _HomeHeroCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${_weekLabel(week)} · 今日待上 $todayCourseCount 节课',
+                  AppStrings.homeHeroSubtitle(
+                    _weekLabel(week),
+                    todayCourseCount,
+                  ),
                   style: const TextStyle(
                     color: _muted,
                     fontSize: 13,
@@ -547,7 +555,7 @@ class _HomeHeroCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                   ),
                   onPressed: onOpenSchedule,
-                  child: const Text('打开课表'),
+                  child: const Text(AppStrings.openSchedule),
                 ),
               ],
             ),
@@ -779,7 +787,7 @@ class _ScheduleTab extends StatelessWidget {
 
     return Column(
       children: [
-        const TopBar(title: '课程表'),
+        const TopBar(title: AppStrings.scheduleTab),
         Padding(
           padding: const EdgeInsets.fromLTRB(18, 2, 18, 12),
           child: _ScheduleHeaderCard(
@@ -845,7 +853,7 @@ class _ScheduleHeaderCard extends StatelessWidget {
           const SizedBox(width: 10),
           const Expanded(
             child: Text(
-              '本周课程',
+              AppStrings.thisWeekCourses,
               style: TextStyle(
                 color: _ink,
                 fontSize: 18,
@@ -902,14 +910,14 @@ class _MineTab extends StatelessWidget {
     return Column(
       children: [
         TopBar(
-          title: '我的',
+          title: AppStrings.mineTab,
           trailing: AnimatedBuilder(
             animation: AuthSession.instance,
             builder: (context, _) => _AuthEntryButton(
               authenticated: AuthSession.instance.isAuthenticated,
               label: AuthSession.instance.isAuthenticated
                   ? AuthSession.instance.user.displayName
-                  : '登录/注册',
+                  : AppStrings.loginOrRegister,
             ),
           ),
         ),
@@ -921,36 +929,36 @@ class _MineTab extends StatelessWidget {
               const SizedBox(height: 14),
               _MineActionTile(
                 icon: Icons.widgets_outlined,
-                title: '桌面小组件',
-                subtitle: '查看不同系统的添加方式',
+                title: AppStrings.homeWidgetTitle,
+                subtitle: AppStrings.homeWidgetSubtitle,
                 color: const Color(0xff6d64ff),
                 onTap: _pinHomeWidget,
               ),
               _MineActionTile(
                 icon: Icons.school_outlined,
-                title: '学习通作业辅助',
-                subtitle: '需登录后使用自动化处理作业流程',
+                title: AppStrings.chaoxingHomeworkTitle,
+                subtitle: AppStrings.chaoxingHomeworkSubtitle,
                 color: _pink,
                 onTap: _openChaoxingHomework,
               ),
               const _MineActionTile(
                 icon: Icons.edit_calendar_outlined,
-                title: '课程设置',
-                subtitle: '导入、编辑和导出课程',
+                title: AppStrings.courseSettingsTitle,
+                subtitle: AppStrings.courseSettingsSubtitle,
                 color: _lavender,
                 page: CourseSettingsPage(),
               ),
               _MineActionTile(
                 icon: Icons.settings_outlined,
-                title: '应用设置',
-                subtitle: '提醒时间、节次和偏好设置',
+                title: AppStrings.appSettingsTitle,
+                subtitle: AppStrings.appSettingsSubtitle,
                 color: Color(0xff5bb6ff),
                 page: AppSettingsPage(),
               ),
               _MineActionTile(
                 icon: Icons.info_outline,
-                title: '关于',
-                subtitle: '版本信息与项目说明',
+                title: AppStrings.aboutTitle,
+                subtitle: AppStrings.aboutSubtitle,
                 color: Color(0xffffc45b),
                 page: AboutPage(),
               ),
@@ -966,12 +974,12 @@ class _MineTab extends StatelessWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('添加小组件'),
-          content: const Text('不同系统添加小组件方式不同，请前往用户手册查看符合你系统的添加方式。'),
+          title: const Text(AppStrings.addWidgetTitle),
+          content: const Text(AppStrings.addWidgetManualMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('关闭'),
+              child: const Text(AppStrings.close),
             ),
             FilledButton(
               onPressed: () async {
@@ -981,7 +989,7 @@ class _MineTab extends StatelessWidget {
                   mode: LaunchMode.externalApplication,
                 );
               },
-              child: const Text('前往官网'),
+              child: const Text(AppStrings.openWebsite),
             ),
           ],
         );
@@ -1004,9 +1012,9 @@ class _MineTab extends StatelessWidget {
     if (!session.isAuthenticated) {
       AppSnackBar.show(
         context,
-        '请先登录后再使用学习通作业辅助',
+        AppStrings.chaoxingLoginRequiredFromHome,
         action: SnackBarAction(
-          label: '去登录',
+          label: AppStrings.goLogin,
           onPressed: () {
             Navigator.of(
               context,
@@ -1067,7 +1075,7 @@ class _MineProfileCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      '我的空间',
+                      AppStrings.mineSpace,
                       style: TextStyle(
                         color: _ink,
                         fontSize: 22,
@@ -1077,8 +1085,11 @@ class _MineProfileCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       user.isAuthenticated
-                          ? '${user.displayName}，已使用 ${user.questionAnalysisCount} 次做题辅助'
-                          : '课程、提醒和工具都在这里',
+                          ? AppStrings.mineUsage(
+                              user.displayName,
+                              user.questionAnalysisCount,
+                            )
+                          : AppStrings.mineGuestSubtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -1268,7 +1279,7 @@ class _WeekHeader extends StatelessWidget {
           child: Align(
             alignment: Alignment.bottomCenter,
             child: Text(
-              '${monday.month}月',
+              AppStrings.monthText(monday.month),
               style: const TextStyle(
                 color: _muted,
                 fontSize: 12,
@@ -1539,13 +1550,17 @@ class _CourseBlock extends StatelessWidget {
                 Text(course.rawTime),
                 const SizedBox(height: 6),
               ],
-              Text(course.location.isEmpty ? '未设置地点' : course.location),
+              Text(
+                course.location.isEmpty
+                    ? AppStrings.locationNotSet
+                    : course.location,
+              ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('确定'),
+              child: const Text(AppStrings.confirm),
             ),
           ],
         );

@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../models/course.dart';
 import '../models/school.dart';
+import '../resources/app_strings.dart';
 import '../screens/academic_import_page.dart';
 import '../services/clark_backend_api.dart';
 import '../services/course_json_importer.dart';
@@ -42,7 +43,7 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
           Column(
             children: [
               TopBar(
-                title: '课程设置',
+                title: AppStrings.courseSettingsTitle,
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back),
                   onPressed: _goBack,
@@ -70,15 +71,15 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
                         itemBuilder: (context) => const [
                           PopupMenuItem(
                             value: _CourseMenu.importSchedule,
-                            child: Text('导入课程'),
+                            child: Text(AppStrings.importCourses),
                           ),
                           PopupMenuItem(
                             value: _CourseMenu.batchAdd,
-                            child: Text('批量添加'),
+                            child: Text(AppStrings.batchAdd),
                           ),
                           PopupMenuItem(
                             value: _CourseMenu.batchDelete,
-                            child: Text('批量删除'),
+                            child: Text(AppStrings.batchDelete),
                           ),
                         ],
                       ),
@@ -87,7 +88,7 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
                 child: courses.isEmpty
                     ? const Center(
                         child: Text(
-                          '点击右上角选择导入课程',
+                          AppStrings.chooseImportFromTopRight,
                           style: TextStyle(color: Color(0xff808080)),
                         ),
                       )
@@ -235,17 +236,17 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
       barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
-          title: const Text('删除课程'),
-          content: Text('确定要删除“${course.name}”吗？此操作不可撤销。'),
+          title: const Text(AppStrings.deleteCourseTitle),
+          content: Text(AppStrings.deleteCourseMessage(course.name)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('取消'),
+              child: const Text(AppStrings.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
               child: const Text(
-                '删除',
+                AppStrings.delete,
                 style: TextStyle(color: Color(0xffff3f15)),
               ),
             ),
@@ -256,7 +257,7 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
     if (confirmed == true) {
       await store.deleteCourse(course.id);
       if (mounted) {
-        AppSnackBar.show(context, '已成功删除课程：${course.name}');
+        AppSnackBar.show(context, AppStrings.courseDeleted(course.name));
       }
     }
   }
@@ -274,20 +275,22 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('删除多门课程'),
+          title: const Text(AppStrings.deleteCoursesTitle),
           content: ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: 360),
-            child: SingleChildScrollView(child: Text('确定删除以下课程吗？\n\n$names')),
+            child: SingleChildScrollView(
+              child: Text(AppStrings.deleteCoursesMessage(names)),
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('取消'),
+              child: const Text(AppStrings.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
               child: const Text(
-                '确定删除',
+                AppStrings.confirmDelete,
                 style: TextStyle(color: Color(0xffff3f15)),
               ),
             ),
@@ -317,7 +320,7 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
     if (result != null && result.isNotEmpty) {
       final imported = await _importCoursesAndSetTermStart(result);
       if (mounted && imported) {
-        AppSnackBar.show(context, '成功添加 ${result.length} 门课程');
+        AppSnackBar.show(context, AppStrings.coursesAdded(result.length));
       }
     }
   }
@@ -336,7 +339,7 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
       showDragHandle: true,
       builder: (context) {
         final academicSubtitle = school == null
-            ? '需先选择支持教务系统导入的学校'
+            ? AppStrings.schoolImportRequiresSupportedSchool
             : '${school.name}(${school.shortName})';
         return SafeArea(
           child: Column(
@@ -344,20 +347,20 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
             children: [
               ListTile(
                 leading: const Icon(Icons.document_scanner),
-                title: const Text('使用OCR导入'),
-                subtitle: const Text('识别课表图片后导入课程'),
+                title: const Text(AppStrings.importByOcr),
+                subtitle: const Text(AppStrings.importByOcrSubtitle),
                 onTap: () => Navigator.of(context).pop(_ImportMethod.ocr),
               ),
               ListTile(
                 leading: const Icon(Icons.key),
-                title: const Text('使用取件码导入'),
-                subtitle: const Text('输入取件码获取课程数据'),
+                title: const Text(AppStrings.importByPickupCode),
+                subtitle: const Text(AppStrings.importByPickupCodeSubtitle),
                 onTap: () =>
                     Navigator.of(context).pop(_ImportMethod.pickupCode),
               ),
               ListTile(
                 leading: const Icon(Icons.public),
-                title: const Text('教务系统导入'),
+                title: const Text(AppStrings.importByAcademic),
                 subtitle: Text(academicSubtitle),
                 onTap: () => Navigator.of(context).pop(_ImportMethod.academic),
               ),
@@ -389,7 +392,7 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
       return;
     }
 
-    _showBlockingMessage('正在上传图片并识别，请稍候');
+    _showBlockingMessage(AppStrings.recognizingCourseImage);
     try {
       final result = await ClarkBackendApi.instance.recognizeCourseImages(
         picked.map((item) => File(item.path)).toList(),
@@ -404,19 +407,22 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
         return;
       }
       if (result.courses.isEmpty) {
-        _showUnavailable('未识别到课程');
+        _showUnavailable(AppStrings.noCoursesRecognized);
         return;
       }
       final imported = await _importCoursesAndSetTermStart(result.courses);
       if (mounted && imported) {
-        AppSnackBar.show(context, '成功导入 ${result.courses.length} 门课程');
+        AppSnackBar.show(
+          context,
+          AppStrings.coursesImported(result.courses.length),
+        );
       }
     } catch (error) {
       if (!mounted) {
         return;
       }
       Navigator.of(context).pop();
-      _showUnavailable('OCR导入失败：$error');
+      _showUnavailable(AppStrings.ocrImportFailed(error));
     }
   }
 
@@ -425,8 +431,8 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('识别完成'),
-          content: SelectableText('取件码：$pickupCode'),
+          title: const Text(AppStrings.recognitionCompleted),
+          content: SelectableText(AppStrings.pickupCodeLabel(pickupCode)),
           actions: [
             TextButton(
               onPressed: () async {
@@ -435,11 +441,11 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
                   Navigator.of(context).pop();
                 }
               },
-              child: const Text('复制取件码'),
+              child: const Text(AppStrings.copyPickupCode),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('继续导入'),
+              child: const Text(AppStrings.continueImport),
             ),
           ],
         );
@@ -456,7 +462,7 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
       return;
     }
 
-    _showBlockingMessage('正在获取课程，请稍候');
+    _showBlockingMessage(AppStrings.fetchingCourses);
     try {
       final courses = await ClarkBackendApi.instance.getCoursesByPickupCode(
         code,
@@ -466,19 +472,19 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
       }
       Navigator.of(context).pop();
       if (courses.isEmpty) {
-        _showUnavailable('取件码没有对应课程');
+        _showUnavailable(AppStrings.pickupCodeNoCourses);
         return;
       }
       final imported = await _importCoursesAndSetTermStart(courses);
       if (mounted && imported) {
-        AppSnackBar.show(context, '成功导入 ${courses.length} 门课程');
+        AppSnackBar.show(context, AppStrings.coursesImported(courses.length));
       }
     } catch (error) {
       if (!mounted) {
         return;
       }
       Navigator.of(context).pop();
-      _showUnavailable('取件码导入失败：$error');
+      _showUnavailable(AppStrings.pickupCodeImportFailed(error));
     }
   }
 
@@ -515,20 +521,20 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
 
   Future<School?> _loadSelectedSchool(String schoolId) async {
     if (schoolId.isEmpty) {
-      _showUnavailable('请先选择学校');
+      _showUnavailable(AppStrings.selectSchoolFirst);
       return null;
     }
     try {
       return await ClarkBackendApi.instance.getSchool(schoolId);
     } catch (error) {
-      _showUnavailable('学校配置加载失败：$error');
+      _showUnavailable(AppStrings.schoolConfigLoadFailed(error));
       return null;
     }
   }
 
   Future<void> _importFromAcademicSystem(School? school) async {
     if (school == null || !_canUseAcademicImport(school)) {
-      _showUnavailable('当前学校未配置教务系统导入方法');
+      _showUnavailable(AppStrings.academicImportNotConfigured);
       return;
     }
 
@@ -549,7 +555,7 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
     if (!imported) {
       return;
     }
-    AppSnackBar.show(context, '成功导入 ${courses.length} 门课程');
+    AppSnackBar.show(context, AppStrings.coursesImported(courses.length));
   }
 
   Future<void> _resetSchoolSelection() async {
@@ -637,10 +643,10 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
           initialTermStartDate: initialDate,
           initialStartTimes: defaults.initialStartTimes,
           lessonCount: lessonCount,
-          title: '选择第一周第一天',
-          subtitle: '课程导入完成后，请先设置学期开始日期；下方节次时间通过上下滑动选择，也可以暂不配置。',
-          confirmText: '继续导入',
-          cancelText: '取消导入',
+          title: AppStrings.selectFirstWeekFirstDayTitle,
+          subtitle: AppStrings.importTermSetupSubtitle,
+          confirmText: AppStrings.continueImportAction,
+          cancelText: AppStrings.cancelImport,
           lessonTimeProfiles: defaults.generalProfiles,
           lessonTimeNotice: defaults.notice,
         ),
@@ -754,29 +760,35 @@ class _CourseListCard extends StatelessWidget {
                           itemBuilder: (context) => const [
                             PopupMenuItem(
                               value: _CourseItemMenu.edit,
-                              child: Text('编辑'),
+                              child: Text(AppStrings.edit),
                             ),
                             PopupMenuItem(
                               value: _CourseItemMenu.color,
-                              child: Text('颜色'),
+                              child: Text(AppStrings.color),
                             ),
                             PopupMenuItem(
                               value: _CourseItemMenu.delete,
-                              child: Text('删除'),
+                              child: Text(AppStrings.delete),
                             ),
                           ],
                         ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  _InfoLine(label: '起止周', value: course.weekText),
                   _InfoLine(
-                    label: '上课时间',
+                    label: AppStrings.weekRangeLabel,
+                    value: course.weekText,
+                  ),
+                  _InfoLine(
+                    label: AppStrings.classTimeLabel,
                     value: timeRange.isEmpty
                         ? ScheduleUtils.dayLabels[course.dayOfWeek - 1]
                         : '${ScheduleUtils.dayLabels[course.dayOfWeek - 1]}  $timeRange',
                   ),
-                  _InfoLine(label: '课程地点', value: course.location),
+                  _InfoLine(
+                    label: AppStrings.courseLocationLabel,
+                    value: course.location,
+                  ),
                 ],
               ),
             ),
@@ -805,7 +817,7 @@ class _InfoLine extends StatelessWidget {
           const SizedBox(width: 15),
           Expanded(
             child: Text(
-              value.isEmpty ? '未设置' : value,
+              value.isEmpty ? AppStrings.notSet : value,
               style: const TextStyle(color: Color(0xff808080)),
               overflow: TextOverflow.ellipsis,
             ),
@@ -844,12 +856,15 @@ class _BatchDeleteBar extends StatelessWidget {
                   value: allSelected,
                   onChanged: (value) => onSelectAll(value ?? false),
                 ),
-                const Text('全选', style: TextStyle(fontSize: 16)),
+                const Text(
+                  AppStrings.selectAll,
+                  style: TextStyle(fontSize: 16),
+                ),
                 const Spacer(),
                 TextButton(
                   onPressed: onConfirm,
                   child: const Text(
-                    '确认删除',
+                    AppStrings.confirmDelete,
                     style: TextStyle(
                       color: Color(0xffff3f15),
                       fontWeight: FontWeight.bold,
@@ -886,7 +901,7 @@ class _BatchAddDialogState extends State<_BatchAddDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('批量添加课程'),
+      title: const Text(AppStrings.batchAddCoursesTitle),
       content: SizedBox(
         width: 520,
         child: TextField(
@@ -895,18 +910,21 @@ class _BatchAddDialogState extends State<_BatchAddDialog> {
           maxLines: 10,
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
-            hintText: '粘贴课程 JSON 数组',
+            hintText: AppStrings.courseJsonHint,
           ),
         ),
       ),
       actions: [
-        TextButton(onPressed: _showHelp, child: const Text('使用说明')),
-        TextButton(onPressed: _exportJson, child: const Text('导出JSON')),
+        TextButton(onPressed: _showHelp, child: const Text(AppStrings.help)),
+        TextButton(
+          onPressed: _exportJson,
+          child: const Text(AppStrings.exportJson),
+        ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('取消'),
+          child: const Text(AppStrings.cancel),
         ),
-        FilledButton(onPressed: _save, child: const Text('保存')),
+        FilledButton(onPressed: _save, child: const Text(AppStrings.save)),
       ],
     );
   }
@@ -914,7 +932,7 @@ class _BatchAddDialogState extends State<_BatchAddDialog> {
   Future<void> _exportJson() async {
     await Clipboard.setData(ClipboardData(text: widget.exportJson));
     if (mounted) {
-      AppSnackBar.show(context, '已复制到剪贴板');
+      AppSnackBar.show(context, AppStrings.copiedToClipboard);
     }
   }
 
@@ -923,21 +941,9 @@ class _BatchAddDialogState extends State<_BatchAddDialog> {
       context: context,
       builder: (context) {
         return const AlertDialog(
-          title: Text('批量添加说明'),
+          title: Text(AppStrings.batchAddHelpTitle),
           content: SingleChildScrollView(
-            child: Text(
-              '[\n'
-              '  {\n'
-              '    "name": "高等数学",\n'
-              '    "startWeek": 1,\n'
-              '    "endWeek": 18,\n'
-              '    "dayOfWeek": 1,\n'
-              '    "startLesson": 1,\n'
-              '    "endLesson": 2,\n'
-              '    "location": "A101"\n'
-              '  }\n'
-              ']',
-            ),
+            child: Text(AppStrings.batchAddHelpExample),
           ),
         );
       },
@@ -951,7 +957,7 @@ class _BatchAddDialogState extends State<_BatchAddDialog> {
     } on FormatException catch (error) {
       _toast(error.message);
     } catch (_) {
-      _toast('输入的JSON格式错误');
+      _toast(AppStrings.invalidJsonInput);
     }
   }
 
@@ -969,7 +975,7 @@ class _CourseColorDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final current = ScheduleUtils.colorForCourse(course);
     return AlertDialog(
-      title: Text('选择颜色：${course.name}'),
+      title: Text(AppStrings.selectColorForCourse(course.name)),
       content: _ColorGrid(
         selected: current,
         onSelected: (color) => Navigator.of(context).pop(color),
@@ -977,7 +983,7 @@ class _CourseColorDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('取消'),
+          child: const Text(AppStrings.cancel),
         ),
       ],
     );
@@ -1009,7 +1015,7 @@ class _ImportedCourseColorsDialogState
   Widget build(BuildContext context) {
     final selectedCourse = _courses[_selectedIndex];
     return AlertDialog(
-      title: const Text('设置课程颜色'),
+      title: const Text(AppStrings.setCourseColor),
       content: SizedBox(
         width: 560,
         child: Column(
@@ -1071,7 +1077,7 @@ class _ImportedCourseColorsDialogState
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                '当前：${selectedCourse.name}',
+                AppStrings.selectedCourseLabel(selectedCourse.name),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontWeight: FontWeight.w700),
@@ -1094,11 +1100,11 @@ class _ImportedCourseColorsDialogState
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('取消'),
+          child: const Text(AppStrings.cancel),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(_courses),
-          child: const Text('确认导入'),
+          child: const Text(AppStrings.confirmImport),
         ),
       ],
     );
@@ -1185,31 +1191,31 @@ class _PickupCodeDialogState extends State<_PickupCodeDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('输入取件码'),
+      title: const Text(AppStrings.enterPickupCodeTitle),
       content: TextField(
         controller: _controller,
         maxLength: 8,
         textCapitalization: TextCapitalization.characters,
         decoration: const InputDecoration(
           border: OutlineInputBorder(),
-          hintText: '例如 A7K9Q2TX',
+          hintText: AppStrings.pickupCodeHint,
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('取消'),
+          child: const Text(AppStrings.cancel),
         ),
         FilledButton(
           onPressed: () {
             final code = _controller.text.trim().toUpperCase();
             if (code.length != 8) {
-              AppSnackBar.show(context, '请输入8位取件码');
+              AppSnackBar.show(context, AppStrings.enterEightDigitPickupCode);
               return;
             }
             Navigator.of(context).pop(code);
           },
-          child: const Text('导入'),
+          child: const Text(AppStrings.import),
         ),
       ],
     );

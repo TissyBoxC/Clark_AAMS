@@ -12,6 +12,7 @@ import '../models/clark_user.dart';
 import '../models/course.dart';
 import '../models/school.dart';
 import '../models/school_lesson_times.dart';
+import '../resources/app_strings.dart';
 import 'auth_token_store.dart';
 
 class ClarkBackendApi {
@@ -28,7 +29,7 @@ class ClarkBackendApi {
   Future<List<School>> getSchools() async {
     final data = await _get('/api/v1/schools');
     if (data is! List) {
-      throw const ApiException(50003, '学校列表响应格式错误');
+      throw const ApiException(50003, AppStrings.invalidSchoolsResponse);
     }
     return [
       for (final item in data)
@@ -47,7 +48,7 @@ class ClarkBackendApi {
     if (data is Map) {
       return School.fromJson(data.cast<String, Object?>());
     }
-    throw const ApiException(50003, '学校配置响应格式错误');
+    throw const ApiException(50003, AppStrings.invalidSchoolConfigResponse);
   }
 
   Future<SchoolLessonTimes> getSchoolLessonTimes(String schoolId) async {
@@ -58,13 +59,19 @@ class ClarkBackendApi {
     if (data is Map) {
       return SchoolLessonTimes.fromJson(data.cast<String, Object?>());
     }
-    throw const ApiException(50003, '学校节次时间响应格式错误');
+    throw const ApiException(
+      50003,
+      AppStrings.invalidSchoolLessonTimesResponse,
+    );
   }
 
   Future<List<SchoolLessonTimes>> getGeneralLessonTimeProfiles() async {
     final data = await _get('/api/v1/schools/lesson-time-profiles');
     if (data is! List) {
-      throw const ApiException(50003, '通用节次时间响应格式错误');
+      throw const ApiException(
+        50003,
+        AppStrings.invalidGeneralLessonTimesResponse,
+      );
     }
     return [
       for (final item in data)
@@ -91,18 +98,18 @@ class ClarkBackendApi {
       'options': {'term': '', 'preferCurrentTerm': true},
     });
     if (data is! Map) {
-      throw const ApiException(50003, '课表导入响应格式错误');
+      throw const ApiException(50003, AppStrings.invalidCourseImportResponse);
     }
     final coursesJson = data['courses'];
     if (coursesJson is! List) {
-      throw const ApiException(50003, '课表数据响应格式错误');
+      throw const ApiException(50003, AppStrings.invalidCourseDataResponse);
     }
     return _parseCourseList(coursesJson);
   }
 
   Future<CoursePickupResult> recognizeCourseImages(List<File> images) async {
     if (images.isEmpty) {
-      throw const ApiException(40001, '请先选择课表图片');
+      throw const ApiException(40001, AppStrings.selectCourseImageFirst);
     }
 
     final request = http.MultipartRequest(
@@ -126,13 +133,13 @@ class ClarkBackendApi {
     final response = await http.Response.fromStream(streamed);
     final data = _unwrap(response);
     if (data is! Map) {
-      throw const ApiException(50003, 'OCR响应格式错误');
+      throw const ApiException(50003, AppStrings.invalidOcrResponse);
     }
 
     final pickupCode = data['pickupCode'] as String? ?? '';
     final coursesJson = data['courses'];
     if (pickupCode.isEmpty || coursesJson is! List) {
-      throw const ApiException(50003, 'OCR课程数据响应格式错误');
+      throw const ApiException(50003, AppStrings.invalidOcrCourseDataResponse);
     }
 
     return CoursePickupResult(
@@ -144,7 +151,7 @@ class ClarkBackendApi {
   Future<List<Course>> getCoursesByPickupCode(String code) async {
     final normalized = code.trim().toUpperCase();
     if (normalized.length != 8) {
-      throw const ApiException(40001, '请输入8位取件码');
+      throw const ApiException(40001, AppStrings.enterEightDigitPickupCode);
     }
 
     final response = await _client
@@ -156,13 +163,19 @@ class ClarkBackendApi {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         response.statusCode,
-        _responseErrorMessage(response, '取件码获取失败：HTTP ${response.statusCode}'),
+        _responseErrorMessage(
+          response,
+          AppStrings.pickupCodeFetchFailed(response.statusCode),
+        ),
       );
     }
 
     final decoded = jsonDecode(utf8.decode(response.bodyBytes));
     if (decoded is! List) {
-      throw const ApiException(50003, '取件码课程数据格式错误');
+      throw const ApiException(
+        50003,
+        AppStrings.invalidPickupCourseDataResponse,
+      );
     }
     return _parseCourseList(decoded);
   }
@@ -186,7 +199,7 @@ class ClarkBackendApi {
     if (data is Map) {
       return AppVersionInfo.fromJson(data.cast<String, Object?>());
     }
-    throw const ApiException(50003, '版本检查响应格式错误');
+    throw const ApiException(50003, AppStrings.invalidVersionCheckResponse);
   }
 
   Future<Map<String, Object?>> analyzeQuestion({
@@ -205,7 +218,7 @@ class ClarkBackendApi {
     if (data is Map) {
       return data.cast<String, Object?>();
     }
-    throw const ApiException(50003, '题目解析响应格式错误');
+    throw const ApiException(50003, AppStrings.invalidQuestionAnalysisResponse);
   }
 
   Future<ClarkUser> register({
@@ -277,17 +290,22 @@ class ClarkBackendApi {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         response.statusCode,
-        _responseErrorMessage(response, '后端请求失败：HTTP ${response.statusCode}'),
+        _responseErrorMessage(
+          response,
+          AppStrings.backendRequestFailed(response.statusCode),
+        ),
       );
     }
 
     final decoded = jsonDecode(utf8.decode(response.bodyBytes));
     if (decoded is! Map) {
-      throw const ApiException(50003, '后端响应格式错误');
+      throw const ApiException(50003, AppStrings.invalidBackendResponse);
     }
 
     final code = _asInt(decoded['code']) ?? 50003;
-    final message = decoded['message'] as String? ?? '后端请求失败';
+    final message =
+        decoded['message'] as String? ??
+        AppStrings.backendRequestFailedFallback;
     if (code != 0) {
       throw ApiException(code, message);
     }
@@ -380,7 +398,7 @@ class ClarkBackendApi {
     if (data is Map) {
       return ClarkUser.fromJson(data.cast<String, Object?>());
     }
-    throw const ApiException(50003, '用户资料响应格式错误');
+    throw const ApiException(50003, AppStrings.invalidUserProfileResponse);
   }
 
   static int? _asInt(Object? value) {

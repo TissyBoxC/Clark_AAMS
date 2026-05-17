@@ -1,3 +1,5 @@
+import '../resources/app_strings.dart';
+
 class ClarkUser {
   const ClarkUser({
     required this.id,
@@ -36,13 +38,13 @@ class ClarkUser {
     if (email.trim().isNotEmpty) {
       return email.trim();
     }
-    return '未登录';
+    return AppStrings.notLoggedIn;
   }
 
   String get maskedLoginCode {
     final value = loginCode.trim();
     if (value.length <= 6) {
-      return value.isEmpty ? '未生成' : '******';
+      return value.isEmpty ? AppStrings.notGenerated : '******';
     }
     return '${value.substring(0, 3)}******${value.substring(value.length - 3)}';
   }

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../resources/app_strings.dart';
 import '../services/auth_session.dart';
 import '../services/chaoxing_question_automation.dart';
 import '../services/clark_backend_api.dart';
@@ -26,8 +27,8 @@ class _ChaoxingHomeworkPageState extends State<ChaoxingHomeworkPage> {
   Offset _panelOffset = const Offset(16, 86);
 
   String _currentUrl = 'https://i.chaoxing.com/';
-  String _currentTitle = '学习通';
-  String _status = '请先登录学习通，并手动进入作业题目页面。';
+  String _currentTitle = AppStrings.chaoxingHomeTitle;
+  String _status = AppStrings.chaoxingInitialStatus;
   String _controlledPage = 'https://i.chaoxing.com/';
   int _foundCount = 0;
   int _currentIndex = 0;
@@ -47,7 +48,7 @@ class _ChaoxingHomeworkPageState extends State<ChaoxingHomeworkPage> {
               _currentUrl = url;
               _controlledPage = url;
               if (!_answering) {
-                _status = '页面加载中';
+                _status = AppStrings.chaoxingPageLoading;
               }
             });
           },
@@ -56,7 +57,7 @@ class _ChaoxingHomeworkPageState extends State<ChaoxingHomeworkPage> {
             _currentUrl = url;
             await _refreshPageIdentity();
             if (mounted && !_answering) {
-              setState(() => _status = '请进入作业页面后点击开始答题');
+              setState(() => _status = AppStrings.chaoxingEnterHomeworkPage);
             }
           },
           onWebResourceError: (error) {
@@ -65,7 +66,7 @@ class _ChaoxingHomeworkPageState extends State<ChaoxingHomeworkPage> {
             }
             setState(() {
               _loading = false;
-              _status = '页面加载失败：${error.description}';
+              _status = AppStrings.chaoxingPageLoadFailed(error.description);
             });
           },
         ),
@@ -77,15 +78,15 @@ class _ChaoxingHomeworkPageState extends State<ChaoxingHomeworkPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('学习通作业辅助'),
+        title: const Text(AppStrings.chaoxingTitle),
         actions: [
           IconButton(
-            tooltip: '重新加载',
+            tooltip: AppStrings.chaoxingReload,
             onPressed: _answering ? null : _controller.reload,
             icon: const Icon(Icons.refresh),
           ),
           IconButton(
-            tooltip: '回到学习通首页',
+            tooltip: AppStrings.chaoxingBackHome,
             onPressed: _answering
                 ? null
                 : () => _controller.loadRequest(
@@ -187,8 +188,8 @@ class _ChaoxingHomeworkPageState extends State<ChaoxingHomeworkPage> {
       if (!mounted) {
         return;
       }
-      setState(() => _status = '请先登录后再使用做题辅助');
-      AppSnackBar.show(context, '请先登录后再使用做题辅助');
+      setState(() => _status = AppStrings.chaoxingLoginRequired);
+      AppSnackBar.show(context, AppStrings.chaoxingLoginRequired);
       return;
     }
     setState(() {
@@ -198,7 +199,7 @@ class _ChaoxingHomeworkPageState extends State<ChaoxingHomeworkPage> {
       _currentIndex = 0;
       _successCount = 0;
       _failedCount = 0;
-      _status = '正在读取当前页面';
+      _status = AppStrings.chaoxingReadingPage;
     });
 
     try {
@@ -216,8 +217,8 @@ class _ChaoxingHomeworkPageState extends State<ChaoxingHomeworkPage> {
       setState(() {
         _foundCount = questions.length;
         _status = questions.isEmpty
-            ? '当前页面未识别到题目'
-            : '共找到 ${questions.length} 道题';
+            ? AppStrings.chaoxingNoQuestions
+            : AppStrings.chaoxingFoundQuestions(questions.length);
       });
 
       for (var i = 0; i < questions.length; i++) {
@@ -228,7 +229,7 @@ class _ChaoxingHomeworkPageState extends State<ChaoxingHomeworkPage> {
         final question = questions[i];
         setState(() {
           _currentIndex = i + 1;
-          _status = '正在处理第 ${question.number} 题';
+          _status = AppStrings.chaoxingProcessingQuestion(question.number);
         });
 
         try {
@@ -240,7 +241,9 @@ class _ChaoxingHomeworkPageState extends State<ChaoxingHomeworkPage> {
           final letter = ChaoxingQuestionAutomation.extractLetter(aiResult);
           if (letter == null) {
             _failedCount++;
-            setState(() => _status = '第 ${question.number} 题未提取到答案');
+            setState(
+              () => _status = AppStrings.chaoxingNoAnswer(question.number),
+            );
             continue;
           }
 
@@ -259,19 +262,25 @@ class _ChaoxingHomeworkPageState extends State<ChaoxingHomeworkPage> {
           }
         } on TimeoutException {
           _failedCount++;
-          setState(() => _status = '第 ${question.number} 题处理超时');
+          setState(
+            () => _status = AppStrings.chaoxingQuestionTimeout(question.number),
+          );
           continue;
         } on ApiException catch (error) {
           _failedCount++;
           if (error.code == 40101) {
-            setState(() => _status = '登录状态无效，请重新登录后再使用');
+            setState(() => _status = AppStrings.chaoxingLoginInvalid);
             break;
           }
-          setState(() => _status = '第 ${question.number} 题处理失败');
+          setState(
+            () => _status = AppStrings.chaoxingQuestionFailed(question.number),
+          );
           continue;
         } catch (error) {
           _failedCount++;
-          setState(() => _status = '第 ${question.number} 题处理失败');
+          setState(
+            () => _status = AppStrings.chaoxingQuestionFailed(question.number),
+          );
           continue;
         }
 
@@ -283,12 +292,12 @@ class _ChaoxingHomeworkPageState extends State<ChaoxingHomeworkPage> {
       }
       setState(() {
         _status = _stopRequested
-            ? '已停止，成功 $_successCount 题，失败 $_failedCount 题'
-            : '答题完成，成功 $_successCount 题，失败 $_failedCount 题';
+            ? AppStrings.chaoxingStopped(_successCount, _failedCount)
+            : AppStrings.chaoxingCompleted(_successCount, _failedCount);
       });
     } catch (error) {
       if (mounted) {
-        setState(() => _status = '自动化异常：$error');
+        setState(() => _status = AppStrings.chaoxingAutomationError(error));
       }
     } finally {
       if (mounted) {
@@ -306,7 +315,7 @@ class _ChaoxingHomeworkPageState extends State<ChaoxingHomeworkPage> {
     }
     setState(() {
       _stopRequested = true;
-      _status = '正在停止，当前题处理完后结束';
+      _status = AppStrings.chaoxingStopping;
     });
   }
 
@@ -396,7 +405,12 @@ class _FloatingAutomationPanel extends StatelessWidget {
             const SizedBox(width: 8),
             Flexible(
               child: Text(
-                answering ? '??? $currentIndex/$foundCount' : '????',
+                answering
+                    ? AppStrings.chaoxingCollapsedProgress(
+                        currentIndex,
+                        foundCount,
+                      )
+                    : AppStrings.chaoxingCollapsedIdle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontWeight: FontWeight.w700),
@@ -422,32 +436,44 @@ class _FloatingAutomationPanel extends StatelessWidget {
               const SizedBox(width: 8),
               const Expanded(
                 child: Text(
-                  '???????',
+                  AppStrings.chaoxingPanelTitle,
                   style: TextStyle(fontWeight: FontWeight.w800),
                 ),
               ),
               IconButton(
                 visualDensity: VisualDensity.compact,
-                tooltip: '??',
+                tooltip: AppStrings.chaoxingCollapsePanel,
                 onPressed: onToggleCollapsed,
                 icon: const Icon(Icons.expand_less),
               ),
             ],
           ),
-          _InfoLine(label: '????', value: currentTitle),
-          _InfoLine(label: '??', value: controlledPage),
+          _InfoLine(
+            label: AppStrings.chaoxingPageTitleLabel,
+            value: currentTitle,
+          ),
+          _InfoLine(label: AppStrings.chaoxingUrlLabel, value: controlledPage),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 6,
             children: [
-              _Metric(label: '??', value: '$foundCount'),
               _Metric(
-                label: '??',
+                label: AppStrings.chaoxingFoundMetric,
+                value: '$foundCount',
+              ),
+              _Metric(
+                label: AppStrings.chaoxingCurrentMetric,
                 value: foundCount == 0 ? '0' : '$currentIndex',
               ),
-              _Metric(label: '??', value: '$successCount'),
-              _Metric(label: '??', value: '$failedCount'),
+              _Metric(
+                label: AppStrings.chaoxingSuccessMetric,
+                value: '$successCount',
+              ),
+              _Metric(
+                label: AppStrings.chaoxingFailedMetric,
+                value: '$failedCount',
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -464,14 +490,14 @@ class _FloatingAutomationPanel extends StatelessWidget {
                 child: FilledButton.icon(
                   onPressed: answering ? null : onStart,
                   icon: const Icon(Icons.play_arrow),
-                  label: const Text('????'),
+                  label: const Text(AppStrings.chaoxingStart),
                 ),
               ),
               const SizedBox(width: 8),
               OutlinedButton.icon(
                 onPressed: answering ? onStop : null,
                 icon: const Icon(Icons.stop),
-                label: const Text('??'),
+                label: const Text(AppStrings.chaoxingStop),
               ),
             ],
           ),
@@ -482,7 +508,6 @@ class _FloatingAutomationPanel extends StatelessWidget {
 }
 
 class _InfoLine extends StatelessWidget {
-
   const _InfoLine({required this.label, required this.value});
 
   final String label;

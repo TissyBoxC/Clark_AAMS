@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="app_name">珂拉课程表</string>
     <string name="course_widget_name">珂拉课程表·今日课程</string>
     <string name="course_widget_name_2x2">珂拉课程表·今日课程</string>
     <string name="course_widget_name_4x2">珂拉课程表·今日课程</string>
@@ -9,4 +10,21 @@
     <string name="course_widget_empty_title">暂无课程</string>
     <string name="course_widget_finished_title">今日已完成</string>
     <string name="course_widget_empty_message">请先同步课程数据</string>
+    <string name="course_widget_date_today_weekday">今天 / %1$s</string>
+    <string name="course_widget_weekday_sunday">星期日</string>
+    <string name="course_widget_weekday_monday">星期一</string>
+    <string name="course_widget_weekday_tuesday">星期二</string>
+    <string name="course_widget_weekday_wednesday">星期三</string>
+    <string name="course_widget_weekday_thursday">星期四</string>
+    <string name="course_widget_weekday_friday">星期五</string>
+    <string name="course_widget_weekday_saturday">星期六</string>
+    <string name="course_widget_weekday_prefix">星期</string>
+    <string name="course_widget_weekday_compact_prefix">周</string>
+    <string name="course_widget_sync_failed">数据同步失败</string>
+    <string name="course_widget_no_courses_today">今天暂无课程</string>
+    <string name="course_widget_room_not_filled">教室未填写</string>
+    <string name="course_widget_preview_date_medium">今天 / 星期六</string>
+    <string name="course_widget_preview_date_small">今天/周六</string>
+    <string name="course_widget_preview_week">第11周</string>
+    <string name="course_widget_scroll_more">点击课程部分查看后面的课程</string>
 </resources>

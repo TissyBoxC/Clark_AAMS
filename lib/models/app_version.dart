@@ -1,3 +1,5 @@
+import '../resources/app_strings.dart';
+
 class AppVersionInfo {
   const AppVersionInfo({
     required this.currentVersion,
@@ -47,7 +49,7 @@ class AppVersionInfo {
       updateType: json['updateType'] as String? ?? 'none',
       updateAvailable: json['updateAvailable'] as bool? ?? false,
       forceUpdate: json['forceUpdate'] as bool? ?? false,
-      title: json['title'] as String? ?? '发现新版本',
+      title: json['title'] as String? ?? AppStrings.updateAvailableTitle,
       message: json['message'] as String? ?? '',
       releaseNotes: notes is List
           ? notes.whereType<String>().toList()

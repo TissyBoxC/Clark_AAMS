@@ -5,6 +5,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/app_version.dart';
+import '../resources/app_strings.dart';
 import '../services/clark_backend_api.dart';
 import '../widgets/top_bar.dart';
 
@@ -35,7 +36,7 @@ class _AboutPageState extends State<AboutPage> {
       body: Column(
         children: [
           TopBar(
-            title: '关于',
+            title: AppStrings.aboutTitle,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => Navigator.of(context).maybePop(),
@@ -58,11 +59,11 @@ class _AboutPageState extends State<AboutPage> {
                 ),
                 const SizedBox(height: 24),
                 const Text(
-                  '珂拉课程表',
+                  AppStrings.appName,
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
-                const Text('一个用于查看、导入、维护本学期课程安排的本地课表应用。'),
+                const Text(AppStrings.appDescription),
                 const SizedBox(height: 22),
                 _VersionPanel(
                   packageInfo: _packageInfo,
@@ -73,13 +74,25 @@ class _AboutPageState extends State<AboutPage> {
                   onUpdate: _openUpdateUrl,
                 ),
                 const SizedBox(height: 22),
-                const _AboutRow(label: '作者', value: 'Provias'),
-                const _AboutRow(label: '开源协议', value: 'GPL 许可证'),
-                const _AboutRow(label: '作者QQ', value: '1686886163'),
-                const _AboutRow(label: '交流QQ群', value: '1046151390'),
+                const _AboutRow(
+                  label: AppStrings.authorLabel,
+                  value: 'Provias',
+                ),
+                const _AboutRow(
+                  label: AppStrings.licenseLabel,
+                  value: AppStrings.gplLicense,
+                ),
+                const _AboutRow(
+                  label: AppStrings.authorQqLabel,
+                  value: '1686886163',
+                ),
+                const _AboutRow(
+                  label: AppStrings.groupQqLabel,
+                  value: '1046151390',
+                ),
                 const SizedBox(height: 8),
                 const Text(
-                  '开源仓库',
+                  AppStrings.repositoryLabel,
                   style: TextStyle(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 6),
@@ -172,10 +185,10 @@ class _VersionPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final current = packageInfo == null
-        ? '读取中'
+        ? AppStrings.loading
         : '${packageInfo!.version}+${packageInfo!.buildNumber}';
     final latest = versionInfo == null
-        ? (checking ? '检查中' : '未知')
+        ? (checking ? AppStrings.checking : AppStrings.unknown)
         : _versionLabel(versionInfo!.latestVersion, versionInfo!.latestBuild);
 
     return Container(
@@ -188,12 +201,15 @@ class _VersionPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('版本信息', style: TextStyle(fontWeight: FontWeight.w700)),
+          const Text(
+            AppStrings.versionInfo,
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 12),
-          _AboutRow(label: '当前版本', value: current),
-          _AboutRow(label: '最新版本', value: latest),
+          _AboutRow(label: AppStrings.currentVersion, value: current),
+          _AboutRow(label: AppStrings.latestVersion, value: latest),
           Text(
-            error == null ? _statusText() : '检查失败：$error',
+            error == null ? _statusText() : AppStrings.checkFailed(error!),
             style: TextStyle(
               color: error == null ? const Color(0xff64748b) : Colors.red,
             ),
@@ -209,13 +225,13 @@ class _VersionPanel extends StatelessWidget {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.refresh, size: 18),
-                label: const Text('检查更新'),
+                label: const Text(AppStrings.checkUpdate),
               ),
               const SizedBox(width: 12),
               FilledButton.icon(
                 onPressed: onUpdate,
                 icon: const Icon(Icons.open_in_new, size: 18),
-                label: const Text('手动更新'),
+                label: const Text(AppStrings.manualUpdate),
               ),
             ],
           ),
@@ -227,20 +243,22 @@ class _VersionPanel extends StatelessWidget {
   String _statusText() {
     final info = versionInfo;
     if (info == null) {
-      return checking ? '正在检查最新版本' : '尚未获取最新版本';
+      return checking
+          ? AppStrings.checkingLatestVersion
+          : AppStrings.noLatestVersion;
     }
     if (info.forceUpdate || info.updateType == 'required') {
-      return '当前版本低于最低可用版本，需要更新';
+      return AppStrings.currentVersionTooLow;
     }
     if (info.updateAvailable) {
-      return '发现新版本，可手动更新';
+      return AppStrings.newVersionAvailable;
     }
-    return '当前已是最新版本';
+    return AppStrings.alreadyLatestVersion;
   }
 
   String _versionLabel(String version, int? build) {
     if (version.isEmpty) {
-      return '未知';
+      return AppStrings.unknown;
     }
     return build == null ? version : '$version+$build';
   }

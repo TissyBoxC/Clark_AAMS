@@ -24,7 +24,7 @@
             android:layout_weight="1"
             android:ellipsize="end"
             android:maxLines="1"
-            android:text="今天 / 星期六"
+            android:text="@string/course_widget_preview_date_medium"
             android:textColor="@color/course_widget_title"
             android:textSize="15sp"
             android:textStyle="bold" />
@@ -36,7 +36,7 @@
             android:layout_marginStart="12dp"
             android:ellipsize="end"
             android:maxLines="1"
-            android:text="第11周"
+            android:text="@string/course_widget_preview_week"
             android:textColor="@color/course_widget_title"
             android:textSize="14sp"
             android:textStyle="bold" />
@@ -80,114 +80,126 @@
         android:orientation="vertical">
 
         <LinearLayout
-            android:id="@+id/widget_medium_row_1"
+            android:id="@+id/widget_medium_list"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/widget_medium_start_1"
-                android:layout_width="52dp"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:gravity="center_vertical"
-                android:maxLines="1"
-                android:text="08:00"
-                android:textColor="@color/course_widget_time"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="4dp"
-                android:layout_height="48dp"
-                android:layout_marginStart="6dp"
-                android:layout_marginEnd="12dp"
-                android:background="@drawable/widget_course_bar"
-                android:text="" />
+            android:orientation="vertical">
 
             <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:id="@+id/widget_medium_page_row_1"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
                 android:layout_weight="1"
-                android:orientation="vertical">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp">
 
                 <TextView
-                    android:id="@+id/widget_medium_name_1"
-                    android:layout_width="match_parent"
+                    android:id="@+id/widget_medium_page_start_1"
+                    android:layout_width="52dp"
                     android:layout_height="wrap_content"
                     android:ellipsize="end"
+                    android:gravity="center_vertical"
                     android:maxLines="1"
-                    android:textColor="@color/course_widget_title"
-                    android:textSize="16sp"
+                    android:text="08:00"
+                    android:textColor="@color/course_widget_time"
+                    android:textSize="18sp"
                     android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/widget_medium_detail_1"
-                    android:layout_width="match_parent"
+                    android:layout_width="4dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="6dp"
+                    android:layout_marginEnd="12dp"
+                    android:background="@drawable/widget_course_bar"
+                    android:text="" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:textColor="@color/course_widget_muted"
-                    android:textSize="12sp" />
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/widget_medium_page_name_1"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:textColor="@color/course_widget_title"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/widget_medium_page_detail_1"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:textColor="@color/course_widget_muted"
+                        android:textSize="12sp" />
+                </LinearLayout>
             </LinearLayout>
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/widget_medium_row_2"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/widget_medium_start_2"
-                android:layout_width="52dp"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:gravity="center_vertical"
-                android:maxLines="1"
-                android:text="10:00"
-                android:textColor="@color/course_widget_time"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="4dp"
-                android:layout_height="48dp"
-                android:layout_marginStart="6dp"
-                android:layout_marginEnd="12dp"
-                android:background="@drawable/widget_course_bar"
-                android:text="" />
 
             <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:id="@+id/widget_medium_page_row_2"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
                 android:layout_weight="1"
-                android:orientation="vertical">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp">
 
                 <TextView
-                    android:id="@+id/widget_medium_name_2"
-                    android:layout_width="match_parent"
+                    android:id="@+id/widget_medium_page_start_2"
+                    android:layout_width="52dp"
                     android:layout_height="wrap_content"
                     android:ellipsize="end"
+                    android:gravity="center_vertical"
                     android:maxLines="1"
-                    android:textColor="@color/course_widget_title"
-                    android:textSize="16sp"
+                    android:text="08:00"
+                    android:textColor="@color/course_widget_time"
+                    android:textSize="18sp"
                     android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/widget_medium_detail_2"
-                    android:layout_width="match_parent"
+                    android:layout_width="4dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="6dp"
+                    android:layout_marginEnd="12dp"
+                    android:background="@drawable/widget_course_bar"
+                    android:text="" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:textColor="@color/course_widget_muted"
-                    android:textSize="12sp" />
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/widget_medium_page_name_2"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:textColor="@color/course_widget_title"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/widget_medium_page_detail_2"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:textColor="@color/course_widget_muted"
+                        android:textSize="12sp" />
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
 
@@ -207,7 +219,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="6dp"
-                android:text="上下滑动查看更多课程"
+                android:text="@string/course_widget_scroll_more"
                 android:textColor="@color/course_widget_hint"
                 android:textSize="11sp" />
         </LinearLayout>

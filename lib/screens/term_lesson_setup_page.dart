@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/school_lesson_times.dart';
+import '../resources/app_strings.dart';
 import '../services/schedule_utils.dart';
 import '../widgets/app_snack_bar.dart';
 import '../widgets/top_bar.dart';
@@ -21,10 +22,10 @@ class TermLessonSetupPage extends StatefulWidget {
     required this.initialTermStartDate,
     required this.initialStartTimes,
     required this.lessonCount,
-    this.title = '设置学期与上课时间',
-    this.subtitle = '先选择第一周第一天，再按需配置每节课开始时间',
-    this.confirmText = '保存配置',
-    this.cancelText = '取消',
+    this.title = AppStrings.setupTermAndLessonTimeTitle,
+    this.subtitle = AppStrings.setupTermAndLessonTimeSubtitle,
+    this.confirmText = AppStrings.saveConfig,
+    this.cancelText = AppStrings.cancel,
     this.lessonTimeProfiles = const <SchoolLessonTimes>[],
     this.lessonTimeNotice = '',
   });
@@ -66,7 +67,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
       body: Column(
         children: [
           TopBar(
-            title: '时间配置',
+            title: AppStrings.timeConfigTitle,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => Navigator.of(context).pop(),
@@ -119,7 +120,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              '第一周第一天',
+                              AppStrings.termFirstDayLabel,
                               style: TextStyle(
                                 color: Color(0xff1f1b2d),
                                 fontSize: 16,
@@ -139,7 +140,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                       ),
                       TextButton(
                         onPressed: _pickTermStartDate,
-                        child: const Text('选择'),
+                        child: const Text(AppStrings.select),
                       ),
                     ],
                   ),
@@ -150,7 +151,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        '每节课开始时间',
+                        AppStrings.lessonStartTimesLabel,
                         style: TextStyle(
                           color: Color(0xff1f1b2d),
                           fontSize: 18,
@@ -171,7 +172,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                       ],
                       const SizedBox(height: 6),
                       const Text(
-                        '可留空。导入作息只会帮你填入数据，保存前仍可逐节修改；留空时课程表正常显示，但桌面小组件不会显示上课时间，也无法按当前时间判断下一节课。',
+                        AppStrings.lessonStartTimesHelp,
                         style: TextStyle(
                           color: Color(0xff8a8498),
                           fontSize: 13,
@@ -210,7 +211,9 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                                     SizedBox(
                                       width: 76,
                                       child: Text(
-                                        '第 ${index + 1} 节',
+                                        AppStrings.lessonNumberWithSpaces(
+                                          index + 1,
+                                        ),
                                         style: const TextStyle(
                                           color: Color(0xff1f1b2d),
                                           fontWeight: FontWeight.w800,
@@ -220,7 +223,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                                     Expanded(
                                       child: Text(
                                         _startTimes[index].isEmpty
-                                            ? '未配置'
+                                            ? AppStrings.notConfigured
                                             : _startTimes[index],
                                         textAlign: TextAlign.right,
                                         style: TextStyle(
@@ -284,9 +287,9 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
       initialDate: _termStartDate,
       firstDate: DateTime(_termStartDate.year - 2),
       lastDate: DateTime(_termStartDate.year + 2),
-      helpText: '选择第一周第一天',
-      cancelText: '取消',
-      confirmText: '确定',
+      helpText: AppStrings.selectFirstWeekFirstDayTitle,
+      cancelText: AppStrings.cancel,
+      confirmText: AppStrings.confirm,
     );
     if (picked == null) {
       return;
@@ -314,7 +317,9 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
     final start = profile.firstConfiguredStartTime;
     AppSnackBar.show(
       context,
-      start.isEmpty ? '已导入通用作息，可继续逐节修改' : '已导入$start上课作息，可继续逐节修改',
+      start.isEmpty
+          ? AppStrings.generalLessonTimesImported
+          : AppStrings.lessonTimesImportedForStart(start),
     );
   }
 
@@ -350,7 +355,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                       child: Row(
                         children: [
                           Text(
-                            '第 ${lessonIndex + 1} 节开始时间',
+                            AppStrings.selectLessonStartTime(lessonIndex + 1),
                             style: const TextStyle(
                               color: Color(0xff1f1b2d),
                               fontSize: 18,
@@ -360,7 +365,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                           const Spacer(),
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(''),
-                            child: const Text('未配置'),
+                            child: const Text(AppStrings.notConfigured),
                           ),
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(
@@ -370,7 +375,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                                 selectedMinute,
                               ),
                             ),
-                            child: const Text('确定'),
+                            child: const Text(AppStrings.confirm),
                           ),
                         ],
                       ),
@@ -397,7 +402,9 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                                   controller: periodController,
                                   itemCount: 2,
                                   selectedIndex: selectedPeriod,
-                                  labelFor: (index) => index == 0 ? '上午' : '下午',
+                                  labelFor: (index) => index == 0
+                                      ? AppStrings.morning
+                                      : AppStrings.afternoon,
                                   onChanged: (value) {
                                     setSheetState(() => selectedPeriod = value);
                                   },
@@ -440,7 +447,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                           Expanded(
                             child: Center(
                               child: Text(
-                                '时段',
+                                AppStrings.period,
                                 style: TextStyle(
                                   color: Color(0xff8a8498),
                                   fontWeight: FontWeight.w700,
@@ -451,7 +458,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                           Expanded(
                             child: Center(
                               child: Text(
-                                '小时',
+                                AppStrings.hour,
                                 style: TextStyle(
                                   color: Color(0xff8a8498),
                                   fontWeight: FontWeight.w700,
@@ -462,7 +469,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                           Expanded(
                             child: Center(
                               child: Text(
-                                '分钟',
+                                AppStrings.minute,
                                 style: TextStyle(
                                   color: Color(0xff8a8498),
                                   fontWeight: FontWeight.w700,
@@ -523,10 +530,12 @@ class _LessonTimeProfileButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final start = profile.firstConfiguredStartTime;
-    final title = start.isEmpty ? '导入通用作息' : '导入 $start 上课作息';
+    final title = start.isEmpty
+        ? AppStrings.importGeneralLessonTimes
+        : AppStrings.importLessonTimesForStart(start);
     final subtitle = start.isEmpty
-        ? '这套为通用配置'
-        : '这套为${_trimLeadingZero(start)}上课';
+        ? AppStrings.generalLessonTimesDescription
+        : AppStrings.lessonTimesDescription(_trimLeadingZero(start));
     return Material(
       color: const Color(0xfff1eeff),
       borderRadius: BorderRadius.circular(16),

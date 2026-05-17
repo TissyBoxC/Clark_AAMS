@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_settings.dart';
 import '../models/course.dart';
+import '../resources/app_strings.dart';
 import '../services/schedule_utils.dart';
 
 enum WidgetPinResult { alreadyPinned, requestSent, manualRequired, failed }
@@ -17,13 +18,7 @@ class WidgetService {
   static const _widgetDataKey = 'course_widget_payload';
   static const _settingsKey = 'class_schedule_settings';
   static const _coursesKey = 'class_schedule_courses';
-  static const _finishedMessages = <String>[
-    '今天的课已经上完了',
-    '今日课程已全部结束',
-    '今天没有下一节课啦',
-    '今日课表已完成',
-    '今天课程收工了',
-  ];
+  static const _finishedMessages = AppStrings.widgetFinishedMessages;
   static const _androidSmallWidgetName =
       'io.github.tissyboxc.widget.WidgetUpdateReceiver';
   static const _androidMediumWidgetName =
@@ -114,11 +109,11 @@ class WidgetService {
       return const _WidgetPayload(
         small: _WidgetPanelState(
           status: _WidgetStatus.error,
-          message: '数据同步失败',
+          message: AppStrings.widgetSyncFailed,
         ),
         medium: _WidgetPanelState(
           status: _WidgetStatus.error,
-          message: '数据同步失败',
+          message: AppStrings.widgetSyncFailed,
         ),
       );
     }
@@ -185,23 +180,17 @@ class WidgetService {
     if (todayCourses.isEmpty) {
       return _WidgetPanelState(
         status: _WidgetStatus.empty,
-        message: '今天暂无课程',
+        message: AppStrings.widgetNoCoursesToday,
         dateText: dateText,
         weekText: weekText,
       );
     }
 
-    if (!_hasUsableTime(todayCourses, settings)) {
-      return _WidgetPanelState(
-        status: _WidgetStatus.missingTimes,
-        message: '请先配置上课时间',
-        dateText: dateText,
-        weekText: weekText,
-      );
-    }
-
-    final nextCourse = _nextCourse(todayCourses, settings, today);
-    if (nextCourse == null) {
+    final hasUsableTime = _hasUsableTime(todayCourses, settings);
+    final visibleCourses = hasUsableTime
+        ? _upcomingCourses(todayCourses, settings, today)
+        : todayCourses;
+    if (hasUsableTime && visibleCourses.isEmpty) {
       return _WidgetPanelState(
         status: _WidgetStatus.finished,
         message: _finishedMessage(),
@@ -210,15 +199,22 @@ class WidgetService {
       );
     }
 
+    final nextCourse = _nextCourse(visibleCourses, settings, today);
     return _WidgetPanelState(
       status: _WidgetStatus.ready,
       dateText: dateText,
       weekText: weekText,
-      nextCourse: _WidgetCourseView.fromCourse(
-        settings: settings,
-        course: nextCourse,
-        now: today,
-      ),
+      nextCourse: nextCourse == null
+          ? null
+          : _WidgetCourseView.fromCourse(
+              settings: settings,
+              course: nextCourse,
+              now: today,
+            ),
+      courseRows: [
+        for (final course in visibleCourses)
+          _WidgetCourseRow.fromCourse(settings: settings, course: course),
+      ],
     );
   }
 
@@ -233,23 +229,17 @@ class WidgetService {
     if (todayCourses.isEmpty) {
       return _WidgetPanelState(
         status: _WidgetStatus.empty,
-        message: '今天暂无课程',
+        message: AppStrings.widgetNoCoursesToday,
         dateText: dateText,
         weekText: weekText,
       );
     }
 
-    if (!_hasUsableTime(todayCourses, settings)) {
-      return _WidgetPanelState(
-        status: _WidgetStatus.missingTimes,
-        message: '请先配置上课时间',
-        dateText: dateText,
-        weekText: weekText,
-      );
-    }
-
-    final upcomingCourses = _upcomingCourses(todayCourses, settings, today);
-    if (upcomingCourses.isEmpty) {
+    final hasUsableTime = _hasUsableTime(todayCourses, settings);
+    final visibleCourses = hasUsableTime
+        ? _upcomingCourses(todayCourses, settings, today)
+        : todayCourses;
+    if (hasUsableTime && visibleCourses.isEmpty) {
       return _WidgetPanelState(
         status: _WidgetStatus.finished,
         message: _finishedMessage(),
@@ -263,7 +253,7 @@ class WidgetService {
       dateText: dateText,
       weekText: weekText,
       courseRows: [
-        for (final course in upcomingCourses.take(2))
+        for (final course in visibleCourses)
           _WidgetCourseRow.fromCourse(settings: settings, course: course),
       ],
     );
@@ -358,20 +348,11 @@ class WidgetService {
   }
 
   static String _dateHeaderText(DateTime date) {
-    const weekdays = <int, String>{
-      DateTime.monday: '星期一',
-      DateTime.tuesday: '星期二',
-      DateTime.wednesday: '星期三',
-      DateTime.thursday: '星期四',
-      DateTime.friday: '星期五',
-      DateTime.saturday: '星期六',
-      DateTime.sunday: '星期日',
-    };
-    return '今天 / ${weekdays[date.weekday] ?? ''}';
+    return AppStrings.todayWithWeekday(date);
   }
 
   static String _weekHeaderText(AppSettingsModel settings, DateTime date) {
-    return '第${ScheduleUtils.currentWeek(settings, date)}周';
+    return AppStrings.weekNumber(ScheduleUtils.currentWeek(settings, date));
   }
 
   static String _finishedMessage() {
@@ -419,7 +400,7 @@ class _WidgetPanelState {
   };
 }
 
-enum _WidgetStatus { ready, empty, finished, missingTimes, error }
+enum _WidgetStatus { ready, empty, finished, error }
 
 class _WidgetCourseView {
   const _WidgetCourseView({
@@ -454,7 +435,7 @@ class _WidgetCourseView {
     final startText = _formatMinute(startMinute);
     final endText = _formatMinute(endMinute);
     final timeText = startText.isEmpty || endText.isEmpty
-        ? '时间未配置'
+        ? AppStrings.widgetTimeNotConfigured
         : '$startText-$endText';
 
     final currentMinute = now.hour * 60 + now.minute;
@@ -463,15 +444,17 @@ class _WidgetCourseView {
         : endMinute ?? startMinute ?? 0;
     final remaining = targetMinute - currentMinute;
     final remainingText = remaining <= 0
-        ? '已开始'
-        : '剩余 ${_formatDuration(remaining)}';
+        ? AppStrings.widgetStarted
+        : AppStrings.widgetRemaining(_formatDuration(remaining));
 
     return _WidgetCourseView(
-      name: course.name.isEmpty ? '未命名课程' : course.name,
+      name: course.name.isEmpty ? AppStrings.unnamedCourse : course.name,
       startTimeText: startText,
       timeText: timeText,
       lessonText: _lessonText(course),
-      roomText: course.location.isEmpty ? '教室未填写' : course.location,
+      roomText: course.location.isEmpty
+          ? AppStrings.roomNotFilled
+          : course.location,
       remainingText: remainingText,
     );
   }
@@ -511,11 +494,15 @@ class _WidgetCourseRow {
       course.startLesson,
     );
     return _WidgetCourseRow(
-      name: course.name.isEmpty ? '未命名课程' : course.name,
+      name: course.name.isEmpty ? AppStrings.unnamedCourse : course.name,
       startTimeText: _formatMinute(startMinute),
-      timeText: timeText.isEmpty ? '时间未配置' : timeText,
+      timeText: timeText.isEmpty
+          ? AppStrings.widgetTimeNotConfigured
+          : timeText,
       lessonText: _lessonText(course),
-      roomText: course.location.isEmpty ? '教室未填写' : course.location,
+      roomText: course.location.isEmpty
+          ? AppStrings.roomNotFilled
+          : course.location,
     );
   }
 
@@ -530,9 +517,9 @@ class _WidgetCourseRow {
 
 String _lessonText(Course course) {
   if (course.startLesson == course.endLesson) {
-    return '第${course.startLesson}节';
+    return AppStrings.lessonText(course.startLesson);
   }
-  return '第${course.startLesson}-${course.endLesson}节';
+  return AppStrings.lessonRangeText(course.startLesson, course.endLesson);
 }
 
 String _formatMinute(int? minute) {
@@ -548,10 +535,10 @@ String _formatDuration(int minute) {
   final hours = minute ~/ 60;
   final remainingMinutes = minute % 60;
   if (hours <= 0) {
-    return '$remainingMinutes分钟';
+    return AppStrings.minutes(remainingMinutes);
   }
   if (remainingMinutes <= 0) {
-    return '$hours小时';
+    return AppStrings.hours(hours);
   }
-  return '$hours小时$remainingMinutes分钟';
+  return AppStrings.hoursMinutes(hours, remainingMinutes);
 }

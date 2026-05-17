@@ -1,5 +1,6 @@
 import '../models/course.dart';
 import '../models/school_lesson_times.dart';
+import '../resources/app_strings.dart';
 import 'clark_backend_api.dart';
 import 'class_schedule_store.dart';
 import 'schedule_utils.dart';
@@ -43,13 +44,13 @@ class LessonTimeDefaults {
             lessonCount,
           ),
           generalProfiles: const <SchoolLessonTimes>[],
-          notice: '已按当前学校作息自动导入，可继续手动调整。',
+          notice: AppStrings.lessonTimesImportedForSchool,
         );
       } catch (_) {
         return LessonTimeSetupDefaults(
           initialStartTimes: _fitLength(store.settings.startTimes, lessonCount),
           generalProfiles: const <SchoolLessonTimes>[],
-          notice: '学校作息获取失败，已保留本地配置。',
+          notice: AppStrings.lessonTimesSchoolFailed,
         );
       }
     }
@@ -66,13 +67,13 @@ class LessonTimeDefaults {
       return LessonTimeSetupDefaults(
         initialStartTimes: _fitLength(store.settings.startTimes, lessonCount),
         generalProfiles: sorted,
-        notice: '未选择学校，可导入通用作息后再调整。',
+        notice: AppStrings.lessonTimesNoSchool,
       );
     } catch (_) {
       return LessonTimeSetupDefaults(
         initialStartTimes: _fitLength(store.settings.startTimes, lessonCount),
         generalProfiles: const <SchoolLessonTimes>[],
-        notice: '通用作息获取失败，可手动配置每节课开始时间。',
+        notice: AppStrings.lessonTimesGeneralFailed,
       );
     }
   }

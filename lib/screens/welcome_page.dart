@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/school.dart';
+import '../resources/app_strings.dart';
 import '../services/clark_backend_api.dart';
 import '../services/schedule_scope.dart';
 import 'course_settings_page.dart';
@@ -46,12 +47,12 @@ class _WelcomePageState extends State<WelcomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                '选择学校',
+                AppStrings.chooseSchoolTitle,
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
               const Text(
-                '请选择当前使用的教务系统，学校列表由后端实时提供。',
+                AppStrings.chooseSchoolSubtitle,
                 style: TextStyle(color: Color(0xff808080)),
               ),
               const SizedBox(height: 18),
@@ -59,12 +60,12 @@ class _WelcomePageState extends State<WelcomePage> {
                 controller: _searchController,
                 textInputAction: TextInputAction.search,
                 decoration: InputDecoration(
-                  hintText: '搜索学校',
+                  hintText: AppStrings.searchSchoolHint,
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: _searchText.isEmpty
                       ? null
                       : IconButton(
-                          tooltip: '清空搜索',
+                          tooltip: AppStrings.clearSearch,
                           icon: const Icon(Icons.close),
                           onPressed: _searchController.clear,
                         ),
@@ -84,7 +85,9 @@ class _WelcomePageState extends State<WelcomePage> {
                     }
                     if (snapshot.hasError) {
                       return _LoadError(
-                        message: '学校列表加载失败：${snapshot.error}',
+                        message: AppStrings.schoolListLoadFailed(
+                          snapshot.error!,
+                        ),
                         onRetry: _reloadSchools,
                       );
                     }
@@ -92,7 +95,7 @@ class _WelcomePageState extends State<WelcomePage> {
                     final schools = snapshot.data ?? const <School>[];
                     if (schools.isEmpty) {
                       return _LoadError(
-                        message: '后端未返回可用学校',
+                        message: AppStrings.noSchoolsFromBackend,
                         onRetry: _reloadSchools,
                       );
                     }
@@ -153,7 +156,7 @@ class _WelcomePageState extends State<WelcomePage> {
                             );
                           }
                         },
-                  child: const Text('进入课程导入'),
+                  child: const Text(AppStrings.enterCourseImport),
                 ),
               ),
               const SizedBox(height: 10),
@@ -170,7 +173,7 @@ class _WelcomePageState extends State<WelcomePage> {
                       );
                     }
                   },
-                  child: const Text('使用其他方式导入'),
+                  child: const Text(AppStrings.useOtherImportMethods),
                 ),
               ),
             ],
@@ -220,7 +223,10 @@ class _LoadError extends StatelessWidget {
             style: const TextStyle(color: Color(0xff808080)),
           ),
           const SizedBox(height: 12),
-          OutlinedButton(onPressed: onRetry, child: const Text('重新加载')),
+          OutlinedButton(
+            onPressed: onRetry,
+            child: const Text(AppStrings.chaoxingReload),
+          ),
         ],
       ),
     );
@@ -233,7 +239,10 @@ class _EmptySearchResult extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Center(
-      child: Text('未找到匹配学校', style: TextStyle(color: Color(0xff808080))),
+      child: Text(
+        AppStrings.noMatchedSchool,
+        style: TextStyle(color: Color(0xff808080)),
+      ),
     );
   }
 }
@@ -281,8 +290,8 @@ class _SchoolTile extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       school.supportsAcademicImport
-                          ? '已配置教务系统导入'
-                          : '暂未配置教务系统导入',
+                          ? AppStrings.academicImportConfigured
+                          : AppStrings.academicImportNotYetConfigured,
                       style: const TextStyle(color: Color(0xff808080)),
                     ),
                   ],

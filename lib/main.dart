@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'resources/app_strings.dart';
 import 'screens/home_page.dart';
 import 'screens/welcome_page.dart';
 import 'services/auth_session.dart';
@@ -28,7 +29,7 @@ class ClassScheduleApp extends StatelessWidget {
       store: store,
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: '珂拉课程表',
+        title: AppStrings.appName,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
             seedColor: const Color(0xff7c6cff),

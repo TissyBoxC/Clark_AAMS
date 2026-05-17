@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../models/app_settings.dart';
 import '../models/school.dart';
+import '../resources/app_strings.dart';
 import '../services/clark_backend_api.dart';
 import '../services/lesson_time_defaults.dart';
 import '../services/schedule_scope.dart';
@@ -56,7 +57,7 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
       body: Column(
         children: [
           TopBar(
-            title: '应用设置',
+            title: AppStrings.appSettingsTitle,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => Navigator.of(context).maybePop(),
@@ -71,12 +72,12 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
                   onReselect: _confirmResetSchoolSelection,
                 ),
                 _SettingRow(
-                  label: '第一周第一天',
+                  label: AppStrings.termFirstDayLabel,
                   trailing: TextButton(
                     onPressed: _configureTermAndTimes,
                     child: Text(
                       settings.termStartDate.isEmpty
-                          ? '未设置'
+                          ? AppStrings.notSet
                           : ScheduleUtils.localDateLabel(
                               ScheduleUtils.termStartDate(settings),
                             ),
@@ -84,7 +85,7 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
                   ),
                 ),
                 _SettingRow(
-                  label: '每节课时间',
+                  label: AppStrings.lessonTimesLabel,
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -92,8 +93,8 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
                         settings.startTimes
                                 .where((time) => time.isNotEmpty)
                                 .isEmpty
-                            ? '未配置'
-                            : '已配置',
+                            ? AppStrings.notConfigured
+                            : AppStrings.configured,
                         style: TextStyle(
                           color:
                               settings.startTimes
@@ -108,7 +109,7 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
                       FilledButton.icon(
                         onPressed: _configureTermAndTimes,
                         icon: const Icon(Icons.schedule_rounded, size: 18),
-                        label: const Text('配置'),
+                        label: const Text(AppStrings.configure),
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 14),
                           minimumSize: const Size(78, 38),
@@ -118,7 +119,7 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
                   ),
                 ),
                 _SettingRow(
-                  label: '最大周数',
+                  label: AppStrings.maxWeeksLabel,
                   trailing: _NumberField(
                     controller: _maxWeeksController,
                     width: 140,
@@ -126,7 +127,7 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
                   ),
                 ),
                 _SettingRow(
-                  label: '重置设置',
+                  label: AppStrings.resetSettingsLabel,
                   trailing: OutlinedButton(
                     onPressed: _confirmReset,
                     style: OutlinedButton.styleFrom(
@@ -139,7 +140,10 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                     ),
-                    child: const Text('确认重置', style: TextStyle(fontSize: 12)),
+                    child: const Text(
+                      AppStrings.confirmReset,
+                      style: TextStyle(fontSize: 12),
+                    ),
                   ),
                 ),
               ],
@@ -169,8 +173,8 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
           initialTermStartDate: current,
           initialStartTimes: defaults.initialStartTimes,
           lessonCount: ScheduleUtils.lessonCount(store.settings, store.courses),
-          title: '学期与节次时间',
-          subtitle: '第一周第一天用于计算当前周数；每节课开始时间用于桌面小组件匹配下一节课。',
+          title: AppStrings.termAndLessonTimesTitle,
+          subtitle: AppStrings.termAndLessonTimesSubtitle,
           lessonTimeProfiles: defaults.generalProfiles,
           lessonTimeNotice: defaults.notice,
         ),
@@ -194,7 +198,7 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
     final oldMaxWeeks = store.settings.maxWeeks;
     final maxWeeks = int.tryParse(_maxWeeksController.text);
     if (maxWeeks == null || maxWeeks < 1 || maxWeeks > 53) {
-      _toast('请输入正确的最大周数');
+      _toast(AppStrings.invalidMaxWeeks);
       return;
     }
     if (maxWeeks != oldMaxWeeks) {
@@ -217,21 +221,19 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
       barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
-          title: const Text('同步课程'),
-          content: const Text(
-            '是否将新的总周数应用到所有持续整个学期的课程？\n所有持续时长超出新总周数的课程的持续时长将会被截短。',
-          ),
+          title: const Text(AppStrings.syncCoursesTitle),
+          content: const Text(AppStrings.syncCoursesMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
               child: const Text(
-                '取消',
+                AppStrings.cancel,
                 style: TextStyle(color: Color(0xffff3f15)),
               ),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('好的'),
+              child: const Text(AppStrings.ok),
             ),
           ],
         );
@@ -245,16 +247,16 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('重置学校选择'),
-          content: const Text('确认重新选择学校吗？本地已保存的课程将被删除。'),
+          title: const Text(AppStrings.resetSchoolSelectionTitle),
+          content: const Text(AppStrings.resetSchoolSelectionMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('取消'),
+              child: const Text(AppStrings.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('确认'),
+              child: const Text(AppStrings.confirm),
             ),
           ],
         );
@@ -277,17 +279,17 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('重置设置'),
-          content: const Text('确认重置设置吗？本地已保存的课程将被删除。'),
+          title: const Text(AppStrings.resetSettingsLabel),
+          content: const Text(AppStrings.resetSettingsMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('取消'),
+              child: const Text(AppStrings.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
               child: const Text(
-                '确认',
+                AppStrings.confirm,
                 style: TextStyle(color: Color(0xffff3f15)),
               ),
             ),
@@ -298,7 +300,7 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
     if (confirmed == true) {
       await store.resetSettings();
       if (mounted) {
-        _toast('设置已重置');
+        _toast(AppStrings.settingsReset);
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const WelcomePage()),
           (route) => false,
@@ -351,7 +353,7 @@ class _SchoolSettingRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Text('学校信息', style: TextStyle(fontSize: 16)),
+          const Text(AppStrings.schoolInfo, style: TextStyle(fontSize: 16)),
           const SizedBox(width: 16),
           Expanded(
             child: Align(
@@ -369,7 +371,10 @@ class _SchoolSettingRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
-            child: const Text('重选学校', style: TextStyle(fontSize: 12)),
+            child: const Text(
+              AppStrings.reselectSchool,
+              style: TextStyle(fontSize: 12),
+            ),
           ),
         ],
       ),
@@ -386,14 +391,14 @@ class _SchoolInfoText extends StatelessWidget {
   Widget build(BuildContext context) {
     if (schoolId.isEmpty) {
       return const Text(
-        '未选择学校',
+        AppStrings.noSchoolSelected,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(color: Color(0xff808080)),
       );
     }
     if (schoolId == AppSettingsModel.unspecifiedSchoolId) {
       return const Text(
-        '其他方式导入',
+        AppStrings.otherImportMethods,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(color: Color(0xff808080)),
       );

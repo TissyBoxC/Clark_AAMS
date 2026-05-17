@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../models/app_settings.dart';
 import '../models/course.dart';
+import '../resources/app_strings.dart';
 
 class ScheduleUtils {
-  static const dayLabels = <String>['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
-  static const remindWays = <String>['日历日程', '闹钟', '通知'];
-  static const alarmWays = <String>['需要确认', '直接设置'];
+  static const dayLabels = AppStrings.weekLabels;
+  static const remindWays = AppStrings.remindWays;
+  static const alarmWays = AppStrings.alarmWays;
 
   static const courseColors = <Color>[
     Color(0xff2563eb),
@@ -42,7 +43,7 @@ class ScheduleUtils {
   ];
 
   static String localDateLabel(DateTime date) {
-    return '${date.year}年${date.month}月${date.day}日';
+    return AppStrings.localDateLabel(date);
   }
 
   static DateTime termStartDate(AppSettingsModel settings) {

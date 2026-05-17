@@ -5,6 +5,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import '../models/course.dart';
 import '../models/school.dart';
+import '../resources/app_strings.dart';
 import '../services/clark_backend_api.dart';
 
 class AcademicImportPage extends StatefulWidget {
@@ -22,7 +23,7 @@ class _AcademicImportPageState extends State<AcademicImportPage> {
 
   bool _loading = true;
   bool _importing = false;
-  String _status = '请在页面中登录教务系统';
+  String _status = AppStrings.academicImportInitialStatus;
 
   @override
   void initState() {
@@ -44,7 +45,7 @@ class _AcademicImportPageState extends State<AcademicImportPage> {
             }
             setState(() {
               _loading = false;
-              _status = '页面加载失败，请检查网络后重试';
+              _status = AppStrings.academicImportLoadFailed;
             });
           },
         ),
@@ -56,10 +57,10 @@ class _AcademicImportPageState extends State<AcademicImportPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.school.shortName} 教务导入'),
+        title: Text(AppStrings.academicImportTitle(widget.school.shortName)),
         actions: [
           IconButton(
-            tooltip: '重新加载',
+            tooltip: AppStrings.chaoxingReload,
             onPressed: _importing
                 ? null
                 : () => _controller.loadRequest(
@@ -104,13 +105,13 @@ class _AcademicImportPageState extends State<AcademicImportPage> {
 
     setState(() {
       _importing = true;
-      _status = '检测到登录成功，正在提交后端导入';
+      _status = AppStrings.academicImportLoginDetected;
     });
 
     try {
       final cookie = await _readCookies();
       if (cookie.isEmpty) {
-        throw const ApiException(40101, '未读取到登录 Cookie，请重新登录');
+        throw const ApiException(40101, AppStrings.academicImportMissingCookie);
       }
       final studentId = await _extractStudentId(url);
       final courses = await ClarkBackendApi.instance.importCourses(
@@ -128,7 +129,7 @@ class _AcademicImportPageState extends State<AcademicImportPage> {
         return;
       }
       setState(() {
-        _status = '导入失败：$error';
+        _status = AppStrings.academicImportFailed(error);
         _importing = false;
       });
     }

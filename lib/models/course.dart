@@ -1,3 +1,5 @@
+import '../resources/app_strings.dart';
+
 class Course {
   const Course({
     required this.id,
@@ -31,12 +33,12 @@ class Course {
 
   String get weekText {
     if (activeWeeks.isEmpty) {
-      return '$startWeek-$endWeek周';
+      return AppStrings.weekRangeText(startWeek, endWeek);
     }
     if (activeWeeks.length == endWeek - startWeek + 1) {
-      return '$startWeek-$endWeek周';
+      return AppStrings.weekRangeText(startWeek, endWeek);
     }
-    return '${activeWeeks.join(',')}周';
+    return AppStrings.weekListText(activeWeeks.join(','));
   }
 
   bool matchesWeek(int week) {

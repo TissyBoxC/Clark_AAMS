@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/clark_user.dart';
+import '../resources/app_strings.dart';
 import '../services/auth_session.dart';
 import '../services/clark_backend_api.dart';
 import '../widgets/app_snack_bar.dart';
@@ -39,7 +40,7 @@ class _AuthPageState extends State<AuthPage> {
       builder: (context, _) {
         final session = AuthSession.instance;
         return Scaffold(
-          appBar: AppBar(title: const Text('账号')),
+          appBar: AppBar(title: const Text(AppStrings.accountTitle)),
           body: SafeArea(
             child: ListView(
               padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
@@ -99,11 +100,11 @@ class _AuthPageState extends State<AuthPage> {
       if (!mounted) {
         return;
       }
-      AppSnackBar.show(context, '已登录');
+      AppSnackBar.show(context, AppStrings.loggedIn);
     } on ApiException catch (error) {
       _showError(error.message);
     } catch (error) {
-      _showError('请求失败：$error');
+      _showError(AppStrings.requestFailed(error));
     }
   }
 
@@ -113,9 +114,9 @@ class _AuthPageState extends State<AuthPage> {
       if (!mounted) {
         return;
       }
-      AppSnackBar.show(context, '已退出登录');
+      AppSnackBar.show(context, AppStrings.loggedOut);
     } catch (error) {
-      _showError('退出登录失败：$error');
+      _showError(AppStrings.logoutFailed(error));
     }
   }
 
@@ -159,12 +160,12 @@ class _AuthForm extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            '登录后可使用学习通作业辅助',
+            AppStrings.loginForChaoxing,
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 8),
           const Text(
-            '课表、桌面小组件等功能仍可不登录使用。',
+            AppStrings.loginOptionalDescription,
             style: TextStyle(
               color: Color(0xff81799f),
               fontWeight: FontWeight.w600,
@@ -173,9 +174,18 @@ class _AuthForm extends StatelessWidget {
           const SizedBox(height: 18),
           SegmentedButton<_AuthMode>(
             segments: const [
-              ButtonSegment(value: _AuthMode.emailLogin, label: Text('邮箱登录')),
-              ButtonSegment(value: _AuthMode.codeLogin, label: Text('登录码')),
-              ButtonSegment(value: _AuthMode.register, label: Text('注册')),
+              ButtonSegment(
+                value: _AuthMode.emailLogin,
+                label: Text(AppStrings.emailLogin),
+              ),
+              ButtonSegment(
+                value: _AuthMode.codeLogin,
+                label: Text(AppStrings.loginCode),
+              ),
+              ButtonSegment(
+                value: _AuthMode.register,
+                label: Text(AppStrings.register),
+              ),
             ],
             selected: {mode},
             onSelectionChanged: busy
@@ -188,7 +198,7 @@ class _AuthForm extends StatelessWidget {
               controller: usernameController,
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
-                labelText: '用户名',
+                labelText: AppStrings.username,
                 prefixIcon: Icon(Icons.person_outline),
                 border: OutlineInputBorder(),
               ),
@@ -201,7 +211,7 @@ class _AuthForm extends StatelessWidget {
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
-                labelText: 'QQ 邮箱',
+                labelText: AppStrings.qqEmail,
                 prefixIcon: Icon(Icons.mail_outline),
                 border: OutlineInputBorder(),
               ),
@@ -213,7 +223,7 @@ class _AuthForm extends StatelessWidget {
               controller: passwordController,
               obscureText: true,
               decoration: const InputDecoration(
-                labelText: '密码',
+                labelText: AppStrings.password,
                 prefixIcon: Icon(Icons.lock_outline),
                 border: OutlineInputBorder(),
               ),
@@ -225,7 +235,7 @@ class _AuthForm extends StatelessWidget {
               controller: loginCodeController,
               textCapitalization: TextCapitalization.characters,
               decoration: const InputDecoration(
-                labelText: '登录码',
+                labelText: AppStrings.loginCode,
                 prefixIcon: Icon(Icons.key_outlined),
                 border: OutlineInputBorder(),
               ),
@@ -247,7 +257,11 @@ class _AuthForm extends StatelessWidget {
                       ),
                     )
                   : const Icon(Icons.login),
-              label: Text(mode == _AuthMode.register ? '注册并登录' : '登录'),
+              label: Text(
+                mode == _AuthMode.register
+                    ? AppStrings.registerAndLogin
+                    : AppStrings.login,
+              ),
             ),
           ),
         ],
@@ -257,7 +271,7 @@ class _AuthForm extends StatelessWidget {
 
   static String? _required(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return '不能为空';
+      return AppStrings.fieldRequired;
     }
     return null;
   }
@@ -265,10 +279,10 @@ class _AuthForm extends StatelessWidget {
   static String? _emailValidator(String? value) {
     final text = value?.trim() ?? '';
     if (text.isEmpty) {
-      return '请输入 QQ 邮箱';
+      return AppStrings.enterQqEmail;
     }
     if (!text.endsWith('@qq.com')) {
-      return '请使用 QQ 邮箱';
+      return AppStrings.useQqEmail;
     }
     return null;
   }
@@ -303,9 +317,17 @@ class _UserPanel extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
-        _AccountLine(label: '登录码', value: user.maskedLoginCode),
-        _AccountLine(label: '邮箱状态', value: user.emailVerified ? '已认定' : '未认定'),
-        _AccountLine(label: '做题辅助次数', value: '${user.questionAnalysisCount}'),
+        _AccountLine(label: AppStrings.loginCode, value: user.maskedLoginCode),
+        _AccountLine(
+          label: AppStrings.emailStatus,
+          value: user.emailVerified
+              ? AppStrings.verified
+              : AppStrings.unverified,
+        ),
+        _AccountLine(
+          label: AppStrings.questionAnalysisCount,
+          value: '${user.questionAnalysisCount}',
+        ),
         const SizedBox(height: 18),
         Row(
           children: [
@@ -315,10 +337,10 @@ class _UserPanel extends StatelessWidget {
                     ? null
                     : () {
                         Clipboard.setData(ClipboardData(text: user.loginCode));
-                        AppSnackBar.show(context, '登录码已复制');
+                        AppSnackBar.show(context, AppStrings.loginCodeCopied);
                       },
                 icon: const Icon(Icons.copy),
-                label: const Text('复制登录码'),
+                label: const Text(AppStrings.copyLoginCode),
               ),
             ),
             const SizedBox(width: 10),
@@ -326,7 +348,7 @@ class _UserPanel extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: busy ? null : onLogout,
                 icon: const Icon(Icons.logout),
-                label: const Text('退出登录'),
+                label: const Text(AppStrings.logout),
               ),
             ),
           ],

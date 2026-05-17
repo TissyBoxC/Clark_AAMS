@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/course.dart';
+import '../resources/app_strings.dart';
 import '../services/schedule_utils.dart';
 import 'app_snack_bar.dart';
 
@@ -52,14 +53,20 @@ class _CourseFormDialogState extends State<CourseFormDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.initialCourse == null ? '添加课程' : '修改课程'),
+      title: Text(
+        widget.initialCourse == null
+            ? AppStrings.addCourse
+            : AppStrings.editCourse,
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(hintText: '课程名称'),
+              decoration: const InputDecoration(
+                hintText: AppStrings.courseNameHint,
+              ),
               textInputAction: TextInputAction.next,
             ),
             const SizedBox(height: 12),
@@ -70,21 +77,27 @@ class _CourseFormDialogState extends State<CourseFormDialog> {
                     value: _startWeek,
                     items: [
                       for (var week = 1; week <= widget.maxWeeks; week++)
-                        DropdownMenuItem(value: week, child: Text('第 $week 周')),
+                        DropdownMenuItem(
+                          value: week,
+                          child: Text(AppStrings.weekPickerText(week)),
+                        ),
                     ],
                     onChanged: (value) => setState(() => _startWeek = value),
                   ),
                 ),
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Text('至'),
+                  child: Text(AppStrings.to),
                 ),
                 Expanded(
                   child: _Dropdown<int>(
                     value: _endWeek,
                     items: [
                       for (var week = widget.maxWeeks; week >= 1; week--)
-                        DropdownMenuItem(value: week, child: Text('第 $week 周')),
+                        DropdownMenuItem(
+                          value: week,
+                          child: Text(AppStrings.weekPickerText(week)),
+                        ),
                     ],
                     onChanged: (value) => setState(() => _endWeek = value),
                   ),
@@ -120,7 +133,7 @@ class _CourseFormDialogState extends State<CourseFormDialog> {
                       )
                         DropdownMenuItem(
                           value: lesson,
-                          child: Text('第 $lesson 节'),
+                          child: Text(AppStrings.lessonPickerText(lesson)),
                         ),
                     ],
                     onChanged: (value) => setState(() => _startLesson = value),
@@ -128,7 +141,7 @@ class _CourseFormDialogState extends State<CourseFormDialog> {
                 ),
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Text('至'),
+                  child: Text(AppStrings.to),
                 ),
                 Expanded(
                   child: _Dropdown<int>(
@@ -141,7 +154,7 @@ class _CourseFormDialogState extends State<CourseFormDialog> {
                       )
                         DropdownMenuItem(
                           value: lesson,
-                          child: Text('第 $lesson 节'),
+                          child: Text(AppStrings.lessonPickerText(lesson)),
                         ),
                     ],
                     onChanged: (value) => setState(() => _endLesson = value),
@@ -152,29 +165,33 @@ class _CourseFormDialogState extends State<CourseFormDialog> {
             const SizedBox(height: 12),
             TextField(
               controller: _locationController,
-              decoration: const InputDecoration(hintText: '课程地点'),
+              decoration: const InputDecoration(
+                hintText: AppStrings.courseLocationHint,
+              ),
               textInputAction: TextInputAction.done,
             ),
           ],
         ),
       ),
       actionsAlignment: MainAxisAlignment.center,
-      actions: [FilledButton(onPressed: _save, child: const Text('保存'))],
+      actions: [
+        FilledButton(onPressed: _save, child: const Text(AppStrings.save)),
+      ],
     );
   }
 
   void _save() {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      _toast('请输入课程名称');
+      _toast(AppStrings.enterCourseName);
       return;
     }
     if (_startWeek > _endWeek) {
-      _toast('起始周不能大于结束周');
+      _toast(AppStrings.startWeekAfterEndWeek);
       return;
     }
     if (_startLesson > _endLesson) {
-      _toast('起始节次不能晚于结束节次');
+      _toast(AppStrings.startLessonAfterEndLesson);
       return;
     }
     Navigator.of(context).pop(
