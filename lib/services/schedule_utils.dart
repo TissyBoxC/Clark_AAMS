@@ -85,11 +85,24 @@ class ScheduleUtils {
       return '';
     }
     final start = settings.startTimes[course.startLesson - 1];
-    final end = endTime(
-      settings.startTimes[course.endLesson - 1],
-      settings.durationPerLesson,
-    );
+    final endStart = settings.startTimes[course.endLesson - 1];
+    if (start.trim().isEmpty || endStart.trim().isEmpty) {
+      return '';
+    }
+    final end = endTime(endStart, settings.durationPerLesson);
     return '$start-$end';
+  }
+
+  static int lessonCount(AppSettingsModel settings, [List<Course>? courses]) {
+    var count = settings.startTimes.length;
+    if (courses != null) {
+      for (final course in courses) {
+        if (course.endLesson > count) {
+          count = course.endLesson;
+        }
+      }
+    }
+    return count.clamp(13, 30);
   }
 
   static String endTime(String startTime, int durationMinutes) {
@@ -131,9 +144,12 @@ class ScheduleUtils {
       if (hour == null ||
           minute == null ||
           hour < 0 ||
-          hour > 23 ||
+          hour > 24 ||
           minute < 0 ||
           minute > 59) {
+        return false;
+      }
+      if (hour == 24 && minute != 0) {
         return false;
       }
     }

@@ -6,7 +6,9 @@ import 'package:clark_aams/services/schedule_utils.dart';
 
 void main() {
   test('formats course time range from configured start times', () {
-    const settings = AppSettingsModel.defaults;
+    final settings = AppSettingsModel.defaults.copyWith(
+      startTimes: <String>['08:00', '08:50', '09:50', '10:40'],
+    );
     const course = Course(
       id: 1,
       name: '高等数学',
@@ -18,7 +20,7 @@ void main() {
       location: 'A101',
     );
 
-    expect(ScheduleUtils.timeRange(settings, course), '9:50-11:25');
+    expect(ScheduleUtils.timeRange(settings, course), '09:50-11:25');
   });
 
   test('calculates current week from the first day of week one', () {

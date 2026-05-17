@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/course.dart';
 import '../services/schedule_utils.dart';
+import 'app_snack_bar.dart';
 
 class CourseFormDialog extends StatefulWidget {
   const CourseFormDialog({
@@ -191,9 +192,7 @@ class _CourseFormDialogState extends State<CourseFormDialog> {
   }
 
   void _toast(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppSnackBar.show(context, message);
   }
 }
 

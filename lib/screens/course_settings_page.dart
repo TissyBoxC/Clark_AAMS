@@ -9,11 +9,14 @@ import '../models/school.dart';
 import '../screens/academic_import_page.dart';
 import '../services/clark_backend_api.dart';
 import '../services/course_json_importer.dart';
+import '../services/lesson_time_defaults.dart';
 import '../services/schedule_scope.dart';
 import '../services/schedule_utils.dart';
+import '../widgets/app_snack_bar.dart';
 import '../widgets/course_form_dialog.dart';
 import '../widgets/top_bar.dart';
 import 'home_page.dart';
+import 'term_lesson_setup_page.dart';
 import 'welcome_page.dart';
 
 class CourseSettingsPage extends StatefulWidget {
@@ -177,7 +180,7 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
       builder: (context) {
         return CourseFormDialog(
           maxWeeks: store.settings.maxWeeks,
-          maxLessons: store.settings.startTimes.length,
+          maxLessons: ScheduleUtils.lessonCount(store.settings, store.courses),
           initialCourse: course,
         );
       },
@@ -253,9 +256,7 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
     if (confirmed == true) {
       await store.deleteCourse(course.id);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('已成功删除课程：${course.name}')));
+        AppSnackBar.show(context, '已成功删除课程：${course.name}');
       }
     }
   }
@@ -316,9 +317,7 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
     if (result != null && result.isNotEmpty) {
       final imported = await _importCoursesAndSetTermStart(result);
       if (mounted && imported) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('成功添加 ${result.length} 门课程')));
+        AppSnackBar.show(context, '成功添加 ${result.length} 门课程');
       }
     }
   }
@@ -410,9 +409,7 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
       }
       final imported = await _importCoursesAndSetTermStart(result.courses);
       if (mounted && imported) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('成功导入 ${result.courses.length} 门课程')),
-        );
+        AppSnackBar.show(context, '成功导入 ${result.courses.length} 门课程');
       }
     } catch (error) {
       if (!mounted) {
@@ -474,9 +471,7 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
       }
       final imported = await _importCoursesAndSetTermStart(courses);
       if (mounted && imported) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('成功导入 ${courses.length} 门课程')));
+        AppSnackBar.show(context, '成功导入 ${courses.length} 门课程');
       }
     } catch (error) {
       if (!mounted) {
@@ -554,9 +549,7 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
     if (!imported) {
       return;
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('成功导入 ${courses.length} 门课程')));
+    AppSnackBar.show(context, '成功导入 ${courses.length} 门课程');
   }
 
   Future<void> _resetSchoolSelection() async {
@@ -572,15 +565,13 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
   }
 
   void _showUnavailable(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppSnackBar.show(context, message);
   }
 
   Future<bool> _importCoursesAndSetTermStart(List<Course> courses) async {
     final store = ScheduleScope.of(context);
-    final termStartDate = await _askTermStartDateAfterImport();
-    if (termStartDate == null) {
+    final setup = await _askTermAndLessonTimesAfterImport(courses);
+    if (setup == null) {
       return false;
     }
     if (!mounted) {
@@ -597,9 +588,10 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
     await store.updateSettings(
       store.settings.copyWith(
         isFirstLaunch: false,
-        termStartDate: ScheduleUtils.formatDate(termStartDate),
-        termMonth: termStartDate.month,
-        termDay: termStartDate.day,
+        termStartDate: ScheduleUtils.formatDate(setup.termStartDate),
+        termMonth: setup.termStartDate.month,
+        termDay: setup.termStartDate.day,
+        startTimes: setup.startTimes,
       ),
     );
     return true;
@@ -626,18 +618,34 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
     );
   }
 
-  Future<DateTime?> _askTermStartDateAfterImport() async {
-    final today = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: today,
-      firstDate: DateTime(today.year - 2),
-      lastDate: DateTime(today.year + 2),
-      helpText: '选择该学期第一周第一天',
-      cancelText: '取消导入',
-      confirmText: '确定',
+  Future<TermLessonSetupResult?> _askTermAndLessonTimesAfterImport(
+    List<Course> courses,
+  ) async {
+    final store = ScheduleScope.of(context);
+    final initialDate = store.settings.termStartDate.isEmpty
+        ? DateTime.now()
+        : ScheduleUtils.termStartDate(store.settings);
+    final lessonCount = ScheduleUtils.lessonCount(store.settings, courses);
+    final defaults = await LessonTimeDefaults.resolve(store, courses: courses);
+    if (!mounted) {
+      return null;
+    }
+    return Navigator.of(context).push<TermLessonSetupResult>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => TermLessonSetupPage(
+          initialTermStartDate: initialDate,
+          initialStartTimes: defaults.initialStartTimes,
+          lessonCount: lessonCount,
+          title: '选择第一周第一天',
+          subtitle: '课程导入完成后，请先设置学期开始日期；下方节次时间通过上下滑动选择，也可以暂不配置。',
+          confirmText: '继续导入',
+          cancelText: '取消导入',
+          lessonTimeProfiles: defaults.generalProfiles,
+          lessonTimeNotice: defaults.notice,
+        ),
+      ),
     );
-    return picked;
   }
 }
 
@@ -667,6 +675,7 @@ class _CourseListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = ScheduleScope.of(context);
+    final timeRange = ScheduleUtils.timeRange(store.settings, course);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 0, 10, 16),
@@ -763,8 +772,9 @@ class _CourseListCard extends StatelessWidget {
                   _InfoLine(label: '起止周', value: course.weekText),
                   _InfoLine(
                     label: '上课时间',
-                    value:
-                        '${ScheduleUtils.dayLabels[course.dayOfWeek - 1]}  ${ScheduleUtils.timeRange(store.settings, course)}',
+                    value: timeRange.isEmpty
+                        ? ScheduleUtils.dayLabels[course.dayOfWeek - 1]
+                        : '${ScheduleUtils.dayLabels[course.dayOfWeek - 1]}  $timeRange',
                   ),
                   _InfoLine(label: '课程地点', value: course.location),
                 ],
@@ -904,9 +914,7 @@ class _BatchAddDialogState extends State<_BatchAddDialog> {
   Future<void> _exportJson() async {
     await Clipboard.setData(ClipboardData(text: widget.exportJson));
     if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('已复制到剪贴板')));
+      AppSnackBar.show(context, '已复制到剪贴板');
     }
   }
 
@@ -948,9 +956,7 @@ class _BatchAddDialogState extends State<_BatchAddDialog> {
   }
 
   void _toast(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppSnackBar.show(context, message);
   }
 }
 
@@ -1198,9 +1204,7 @@ class _PickupCodeDialogState extends State<_PickupCodeDialog> {
           onPressed: () {
             final code = _controller.text.trim().toUpperCase();
             if (code.length != 8) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('请输入8位取件码')));
+              AppSnackBar.show(context, '请输入8位取件码');
               return;
             }
             Navigator.of(context).pop(code);

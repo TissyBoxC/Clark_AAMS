@@ -7,6 +7,7 @@ class School {
     required this.supportsImageRecognition,
     required this.login,
     required this.version,
+    required this.lessonTimeProfile,
   });
 
   final String id;
@@ -16,6 +17,7 @@ class School {
   final bool supportsImageRecognition;
   final SchoolLogin login;
   final int version;
+  final String lessonTimeProfile;
 
   static School fromJson(Map<String, Object?> json) {
     final capabilities = _asMap(json['capabilities']);
@@ -28,6 +30,7 @@ class School {
           capabilities['imageRecognition'] as bool? ?? false,
       login: SchoolLogin.fromJson(_asMap(json['login'])),
       version: _asInt(json['version']) ?? 0,
+      lessonTimeProfile: json['lessonTimeProfile'] as String? ?? '',
     );
   }
 

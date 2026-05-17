@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_settings.dart';
 import '../models/course.dart';
+import '../widget/widget_service.dart';
 
 class ClassScheduleStore extends ChangeNotifier {
   ClassScheduleStore._(this._prefs, this.settings, this._courses);
@@ -121,6 +122,7 @@ class ClassScheduleStore extends ChangeNotifier {
     _courses = const <Course>[];
     await _prefs.remove(_coursesKey);
     await _prefs.remove(_nextCourseIdKey);
+    await WidgetService.updateWidget();
     notifyListeners();
   }
 
@@ -203,6 +205,7 @@ class ClassScheduleStore extends ChangeNotifier {
 
   Future<void> _saveSettings() async {
     await _prefs.setString(_settingsKey, jsonEncode(settings.toJson()));
+    await WidgetService.updateWidget();
     notifyListeners();
   }
 
@@ -211,6 +214,7 @@ class ClassScheduleStore extends ChangeNotifier {
       _coursesKey,
       jsonEncode(_courses.map((course) => course.toJson()).toList()),
     );
+    await WidgetService.updateWidget();
     notifyListeners();
   }
 

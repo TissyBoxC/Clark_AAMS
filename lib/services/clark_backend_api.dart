@@ -8,8 +8,11 @@ import 'package:mime/mime.dart';
 
 import '../config/backend_config.dart';
 import '../models/app_version.dart';
+import '../models/clark_user.dart';
 import '../models/course.dart';
 import '../models/school.dart';
+import '../models/school_lesson_times.dart';
+import 'auth_token_store.dart';
 
 class ClarkBackendApi {
   ClarkBackendApi({http.Client? client}) : _client = client ?? http.Client();
@@ -19,6 +22,7 @@ class ClarkBackendApi {
   final http.Client _client;
 
   static const _timeout = Duration(seconds: 20);
+  static const _questionAnalyzeTimeout = Duration(minutes: 5);
   static const _ocrTimeout = Duration(seconds: 180);
 
   Future<List<School>> getSchools() async {
@@ -44,6 +48,31 @@ class ClarkBackendApi {
       return School.fromJson(data.cast<String, Object?>());
     }
     throw const ApiException(50003, '学校配置响应格式错误');
+  }
+
+  Future<SchoolLessonTimes> getSchoolLessonTimes(String schoolId) async {
+    final data = await _get('/api/v1/schools/$schoolId/lesson-times');
+    if (data is Map<String, Object?>) {
+      return SchoolLessonTimes.fromJson(data);
+    }
+    if (data is Map) {
+      return SchoolLessonTimes.fromJson(data.cast<String, Object?>());
+    }
+    throw const ApiException(50003, '学校节次时间响应格式错误');
+  }
+
+  Future<List<SchoolLessonTimes>> getGeneralLessonTimeProfiles() async {
+    final data = await _get('/api/v1/schools/lesson-time-profiles');
+    if (data is! List) {
+      throw const ApiException(50003, '通用节次时间响应格式错误');
+    }
+    return [
+      for (final item in data)
+        if (item is Map<String, Object?>)
+          SchoolLessonTimes.fromJson(item)
+        else if (item is Map)
+          SchoolLessonTimes.fromJson(item.cast<String, Object?>()),
+    ];
   }
 
   Future<List<Course>> importCourses({
@@ -79,6 +108,9 @@ class ClarkBackendApi {
     final request = http.MultipartRequest(
       'POST',
       BackendConfig.uri('/api/v1/course-pickups'),
+    );
+    request.headers.addAll(
+      await AuthTokenStore.instance.authHeaders(contentTypeJson: false),
     );
     for (final image in images) {
       request.files.add(
@@ -116,7 +148,10 @@ class ClarkBackendApi {
     }
 
     final response = await _client
-        .get(BackendConfig.uri('/api/v1/course-pickups/$normalized'))
+        .get(
+          BackendConfig.uri('/api/v1/course-pickups/$normalized'),
+          headers: await AuthTokenStore.instance.authHeaders(),
+        )
         .timeout(_timeout);
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
@@ -154,21 +189,87 @@ class ClarkBackendApi {
     throw const ApiException(50003, '版本检查响应格式错误');
   }
 
+  Future<Map<String, Object?>> analyzeQuestion({
+    required String questionType,
+    required String questionContent,
+    required List<String> options,
+  }) async {
+    final data = await _post('/api/v1/questions/analyze', {
+      'question_type': questionType,
+      'question_content': questionContent,
+      'options': options,
+    }, timeout: _questionAnalyzeTimeout);
+    if (data is Map<String, Object?>) {
+      return data;
+    }
+    if (data is Map) {
+      return data.cast<String, Object?>();
+    }
+    throw const ApiException(50003, '题目解析响应格式错误');
+  }
+
+  Future<ClarkUser> register({
+    required String username,
+    required String password,
+    required String qqEmail,
+  }) async {
+    final data = await _post('/api/v1/user/register', {
+      'username': username,
+      'password': password,
+      'qqEmail': qqEmail,
+    });
+    return _parseUser(data);
+  }
+
+  Future<ClarkUser> loginByEmail({
+    required String qqEmail,
+    required String password,
+  }) async {
+    final data = await _post('/api/v1/user/login', {
+      'qqEmail': qqEmail,
+      'password': password,
+    });
+    return _parseUser(data);
+  }
+
+  Future<ClarkUser> loginByCode(String loginCode) async {
+    final data = await _post('/api/v1/user/login', {'loginCode': loginCode});
+    return _parseUser(data);
+  }
+
+  Future<ClarkUser> currentUser() async {
+    final data = await _get('/api/v1/user/me');
+    return _parseUser(data);
+  }
+
+  Future<void> logout() async {
+    await _post('/api/v1/user/logout', {});
+  }
+
   Future<Object?> _get(String path) async {
     final response = await _client
-        .get(BackendConfig.uri(path))
+        .get(
+          BackendConfig.uri(path),
+          headers: await AuthTokenStore.instance.authHeaders(),
+        )
         .timeout(_timeout);
     return _unwrap(response);
   }
 
-  Future<Object?> _post(String path, Map<String, Object?> body) async {
+  Future<Object?> _post(
+    String path,
+    Map<String, Object?> body, {
+    Duration timeout = _timeout,
+  }) async {
     final response = await _client
         .post(
           BackendConfig.uri(path),
-          headers: const {'Content-Type': 'application/json'},
+          headers: await AuthTokenStore.instance.authHeaders(
+            contentTypeJson: true,
+          ),
           body: jsonEncode(body),
         )
-        .timeout(_timeout);
+        .timeout(timeout);
     return _unwrap(response);
   }
 
@@ -270,6 +371,16 @@ class ClarkBackendApi {
             fallbackId: index + 1,
           ),
     ];
+  }
+
+  ClarkUser _parseUser(Object? data) {
+    if (data is Map<String, Object?>) {
+      return ClarkUser.fromJson(data);
+    }
+    if (data is Map) {
+      return ClarkUser.fromJson(data.cast<String, Object?>());
+    }
+    throw const ApiException(50003, '用户资料响应格式错误');
   }
 
   static int? _asInt(Object? value) {

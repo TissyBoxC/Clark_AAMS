@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#FFFFFF</color>
+    <color name="course_widget_surface">#FFFFFF</color>
+    <color name="course_widget_border">#E7E5EF</color>
+    <color name="course_widget_primary">#6D64FF</color>
+    <color name="course_widget_primary_soft">#F3F0FF</color>
+    <color name="course_widget_secondary">#5D6476</color>
+    <color name="course_widget_muted">#7B8092</color>
 </resources>

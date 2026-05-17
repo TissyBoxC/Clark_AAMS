@@ -1,13 +1,19 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'screens/home_page.dart';
 import 'screens/welcome_page.dart';
+import 'services/auth_session.dart';
 import 'services/class_schedule_store.dart';
 import 'services/schedule_scope.dart';
+import 'widget/widget_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final store = await ClassScheduleStore.load();
+  unawaited(WidgetService.updateWidget());
+  unawaited(AuthSession.instance.initialize());
   runApp(ClassScheduleApp(store: store));
 }
 
@@ -25,14 +31,14 @@ class ClassScheduleApp extends StatelessWidget {
         title: '珂拉课程表',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xff0f766e),
+            seedColor: const Color(0xff7c6cff),
             brightness: Brightness.light,
           ),
           useMaterial3: true,
-          scaffoldBackgroundColor: const Color(0xfff6f8fb),
+          scaffoldBackgroundColor: const Color(0xfffffbff),
           appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xfff6f8fb),
-            foregroundColor: Color(0xff172033),
+            backgroundColor: Color(0xfffffbff),
+            foregroundColor: Color(0xff2b2545),
             centerTitle: true,
             elevation: 0,
           ),
@@ -45,12 +51,12 @@ class ClassScheduleApp extends StatelessWidget {
           ),
           filledButtonTheme: FilledButtonThemeData(
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xff0f766e),
+              backgroundColor: const Color(0xff7c6cff),
               foregroundColor: Colors.white,
             ),
           ),
           floatingActionButtonTheme: const FloatingActionButtonThemeData(
-            backgroundColor: Color(0xff0f766e),
+            backgroundColor: Color(0xff7c6cff),
             foregroundColor: Colors.white,
           ),
         ),

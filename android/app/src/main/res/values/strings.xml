@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="course_widget_name">课程小组件</string>
+    <string name="course_widget_description">显示下一节课和今日课程列表</string>
+    <string name="course_widget_small_title">下一节课</string>
+    <string name="course_widget_medium_title">今日课程</string>
+    <string name="course_widget_empty_title">暂无课程</string>
+    <string name="course_widget_empty_message">请先同步课程数据</string>
+</resources>

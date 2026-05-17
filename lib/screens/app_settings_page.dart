@@ -4,9 +4,12 @@ import 'package:flutter/services.dart';
 import '../models/app_settings.dart';
 import '../models/school.dart';
 import '../services/clark_backend_api.dart';
+import '../services/lesson_time_defaults.dart';
 import '../services/schedule_scope.dart';
 import '../services/schedule_utils.dart';
+import '../widgets/app_snack_bar.dart';
 import '../widgets/top_bar.dart';
+import 'term_lesson_setup_page.dart';
 import 'welcome_page.dart';
 
 class AppSettingsPage extends StatefulWidget {
@@ -70,12 +73,48 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
                 _SettingRow(
                   label: '第一周第一天',
                   trailing: TextButton(
-                    onPressed: _pickTermStartDate,
+                    onPressed: _configureTermAndTimes,
                     child: Text(
-                      ScheduleUtils.localDateLabel(
-                        ScheduleUtils.termStartDate(settings),
-                      ),
+                      settings.termStartDate.isEmpty
+                          ? '未设置'
+                          : ScheduleUtils.localDateLabel(
+                              ScheduleUtils.termStartDate(settings),
+                            ),
                     ),
+                  ),
+                ),
+                _SettingRow(
+                  label: '每节课时间',
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        settings.startTimes
+                                .where((time) => time.isNotEmpty)
+                                .isEmpty
+                            ? '未配置'
+                            : '已配置',
+                        style: TextStyle(
+                          color:
+                              settings.startTimes
+                                  .where((time) => time.isNotEmpty)
+                                  .isEmpty
+                              ? const Color(0xff9a92aa)
+                              : const Color(0xff6d64ff),
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      FilledButton.icon(
+                        onPressed: _configureTermAndTimes,
+                        icon: const Icon(Icons.schedule_rounded, size: 18),
+                        label: const Text('配置'),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          minimumSize: const Size(78, 38),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 _SettingRow(
@@ -111,26 +150,41 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
     );
   }
 
-  Future<void> _pickTermStartDate() async {
+  Future<void> _configureTermAndTimes() async {
     final store = ScheduleScope.of(context);
-    final current = ScheduleUtils.termStartDate(store.settings);
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: current,
-      firstDate: DateTime(current.year - 2),
-      lastDate: DateTime(current.year + 2),
-      helpText: '选择第一周第一天',
-      cancelText: '取消',
-      confirmText: '确定',
+    final current = store.settings.termStartDate.isEmpty
+        ? DateTime.now()
+        : ScheduleUtils.termStartDate(store.settings);
+    final defaults = await LessonTimeDefaults.resolve(
+      store,
+      courses: store.courses,
     );
-    if (picked == null) {
+    if (!mounted) {
+      return;
+    }
+    final result = await Navigator.of(context).push<TermLessonSetupResult>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => TermLessonSetupPage(
+          initialTermStartDate: current,
+          initialStartTimes: defaults.initialStartTimes,
+          lessonCount: ScheduleUtils.lessonCount(store.settings, store.courses),
+          title: '学期与节次时间',
+          subtitle: '第一周第一天用于计算当前周数；每节课开始时间用于桌面小组件匹配下一节课。',
+          lessonTimeProfiles: defaults.generalProfiles,
+          lessonTimeNotice: defaults.notice,
+        ),
+      ),
+    );
+    if (result == null) {
       return;
     }
     await store.updateSettings(
       store.settings.copyWith(
-        termStartDate: ScheduleUtils.formatDate(picked),
-        termMonth: picked.month,
-        termDay: picked.day,
+        termStartDate: ScheduleUtils.formatDate(result.termStartDate),
+        termMonth: result.termStartDate.month,
+        termDay: result.termStartDate.day,
+        startTimes: result.startTimes,
       ),
     );
   }
@@ -254,9 +308,7 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
   }
 
   void _toast(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppSnackBar.show(context, message);
   }
 }
 

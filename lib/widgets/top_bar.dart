@@ -19,7 +19,7 @@ class TopBar extends StatelessWidget {
     return SafeArea(
       bottom: false,
       child: SizedBox(
-        height: 53,
+        height: 58,
         child: Stack(
           alignment: Alignment.center,
           children: [
@@ -37,9 +37,9 @@ class TopBar extends StatelessWidget {
                 Text(
                   title,
                   style: const TextStyle(
-                    color: Color(0xff172033),
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
+                    color: Color(0xff2b2545),
+                    fontSize: 21,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
               ],
