@@ -16,7 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// 看起来像「以 fallback 为准」，实际必须是「以服务端为准」。
 void main() {
   Map<String, Object?> serverCourse({int? id}) => <String, Object?>{
-    if (id != null) 'id': id,
+    ?'id': id,
     'name': '高等数学',
     'dayOfWeek': 1,
     'startLesson': 1,
