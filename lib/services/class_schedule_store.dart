@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_settings.dart';
 import '../models/course.dart';
+import '../utils/json_util.dart';
 import '../widget/widget_service.dart';
 import 'course_importer.dart';
 
@@ -37,33 +38,15 @@ class ClassScheduleStore extends ChangeNotifier {
     final coursesJson = prefs.getString(_coursesKey);
 
     var settings = AppSettingsModel.defaults;
-    if (settingsJson != null) {
-      final decoded = jsonDecode(settingsJson);
-      if (decoded is Map<String, Object?>) {
-        settings = AppSettingsModel.fromJson(decoded);
-      } else if (decoded is Map) {
-        settings = AppSettingsModel.fromJson(decoded.cast<String, Object?>());
-      }
+    final settingsMap = JsonUtil.asMap(JsonUtil.tryDecode(settingsJson));
+    if (settingsMap != null) {
+      settings = AppSettingsModel.fromJson(settingsMap);
     }
 
     final courses = <Course>[];
-    if (coursesJson != null) {
-      final decoded = jsonDecode(coursesJson);
-      if (decoded is List) {
-        for (var index = 0; index < decoded.length; index++) {
-          final item = decoded[index];
-          if (item is Map<String, Object?>) {
-            courses.add(Course.fromJson(item, fallbackId: index + 1));
-          } else if (item is Map) {
-            courses.add(
-              Course.fromJson(
-                item.cast<String, Object?>(),
-                fallbackId: index + 1,
-              ),
-            );
-          }
-        }
-      }
+    final courseMaps = JsonUtil.asMapList(JsonUtil.tryDecode(coursesJson));
+    for (var index = 0; index < courseMaps.length; index++) {
+      courses.add(Course.fromJson(courseMaps[index], fallbackId: index + 1));
     }
 
     if (settings.hasSpecificSchool &&

@@ -10,6 +10,7 @@ import '../config/backend_config.dart';
 import '../models/app_version.dart';
 import '../models/clark_user.dart';
 import '../models/course.dart';
+import '../utils/json_util.dart';
 import '../models/error_codes.dart';
 import '../models/school.dart';
 import '../models/school_lesson_times.dart';
@@ -62,33 +63,23 @@ class ClarkBackendApi {
     if (data is! List) {
       throw const ApiException(50003, AppStrings.invalidSchoolsResponse);
     }
-    return [
-      for (final item in data)
-        if (item is Map<String, Object?>)
-          School.fromJson(item)
-        else if (item is Map)
-          School.fromJson(item.cast<String, Object?>()),
-    ];
+    return [for (final item in JsonUtil.asMapList(data)) School.fromJson(item)];
   }
 
   Future<School> getSchool(String schoolId) async {
     final data = await _get('/api/v1/schools/$schoolId');
-    if (data is Map<String, Object?>) {
-      return School.fromJson(data);
-    }
-    if (data is Map) {
-      return School.fromJson(data.cast<String, Object?>());
+    final map = JsonUtil.asMap(data);
+    if (map != null) {
+      return School.fromJson(map);
     }
     throw const ApiException(50003, AppStrings.invalidSchoolConfigResponse);
   }
 
   Future<SchoolLessonTimes> getSchoolLessonTimes(String schoolId) async {
     final data = await _get('/api/v1/schools/$schoolId/lesson-times');
-    if (data is Map<String, Object?>) {
-      return SchoolLessonTimes.fromJson(data);
-    }
-    if (data is Map) {
-      return SchoolLessonTimes.fromJson(data.cast<String, Object?>());
+    final map = JsonUtil.asMap(data);
+    if (map != null) {
+      return SchoolLessonTimes.fromJson(map);
     }
     throw const ApiException(
       50003,
@@ -105,11 +96,8 @@ class ClarkBackendApi {
       );
     }
     return [
-      for (final item in data)
-        if (item is Map<String, Object?>)
-          SchoolLessonTimes.fromJson(item)
-        else if (item is Map)
-          SchoolLessonTimes.fromJson(item.cast<String, Object?>()),
+      for (final item in JsonUtil.asMapList(data))
+        SchoolLessonTimes.fromJson(item),
     ];
   }
 
@@ -216,11 +204,9 @@ class ClarkBackendApi {
       'channel': channel,
       'extra': <String, Object?>{},
     });
-    if (data is Map<String, Object?>) {
-      return AppVersionInfo.fromJson(data);
-    }
-    if (data is Map) {
-      return AppVersionInfo.fromJson(data.cast<String, Object?>());
+    final map = JsonUtil.asMap(data);
+    if (map != null) {
+      return AppVersionInfo.fromJson(map);
     }
     throw const ApiException(50003, AppStrings.invalidVersionCheckResponse);
   }
@@ -235,11 +221,9 @@ class ClarkBackendApi {
       'question_content': questionContent,
       'options': options,
     }, timeout: _questionAnalyzeTimeout);
-    if (data is Map<String, Object?>) {
-      return data;
-    }
-    if (data is Map) {
-      return data.cast<String, Object?>();
+    final map = JsonUtil.asMap(data);
+    if (map != null) {
+      return map;
     }
     throw const ApiException(50003, AppStrings.invalidQuestionAnalysisResponse);
   }
@@ -261,11 +245,9 @@ class ClarkBackendApi {
       if (studentAnswer != null && studentAnswer.trim().isNotEmpty)
         'student_answer': studentAnswer.trim(),
     }, timeout: _questionAnalyzeTimeout);
-    if (data is Map<String, Object?>) {
-      return data;
-    }
-    if (data is Map) {
-      return data.cast<String, Object?>();
+    final map = JsonUtil.asMap(data);
+    if (map != null) {
+      return map;
     }
     throw const ApiException(50003, AppStrings.invalidQuestionAnalysisResponse);
   }
@@ -318,8 +300,8 @@ class ClarkBackendApi {
       role: UserRole.fromWire(data['role']),
       authenticated: data['authenticated'] == true,
       displayName: (data['displayName'] as String? ?? '').trim(),
-      user: rawUser is Map
-          ? ClarkUser.fromJson(Map<String, Object?>.from(rawUser))
+      user: JsonUtil.asMap(rawUser) != null
+          ? ClarkUser.fromJson(JsonUtil.asMap(rawUser)!)
           : null,
     );
   }
@@ -346,10 +328,10 @@ class ClarkBackendApi {
     if (data is! List) {
       throw const ApiException(50003, AppStrings.invalidBackendResponse);
     }
+    final items = JsonUtil.asMapList(data);
     return [
-      for (var i = 0; i < data.length; i++)
-        if (data[i] is Map)
-          Course.fromJson((data[i] as Map).cast<String, Object?>(), fallbackId: i + 1),
+      for (var i = 0; i < items.length; i++)
+        Course.fromJson(items[i], fallbackId: i + 1),
     ];
   }
 
@@ -363,10 +345,10 @@ class ClarkBackendApi {
     if (data is! List) {
       throw const ApiException(50003, AppStrings.invalidBackendResponse);
     }
+    final items = JsonUtil.asMapList(data);
     return [
-      for (var i = 0; i < data.length; i++)
-        if (data[i] is Map)
-          Course.fromJson((data[i] as Map).cast<String, Object?>(), fallbackId: i + 1),
+      for (var i = 0; i < items.length; i++)
+        Course.fromJson(items[i], fallbackId: i + 1),
     ];
   }
 
@@ -378,8 +360,9 @@ class ClarkBackendApi {
   /// 清空服务端课表，返回删除条数。
   Future<int> clearMyCourses() async {
     final data = await _send('DELETE', '/api/v1/courses/schedule');
-    if (data is Map) {
-      final removed = data['removed'];
+    final map = JsonUtil.asMap(data);
+    if (map != null) {
+      final removed = map['removed'];
       if (removed is int) {
         return removed;
       }
@@ -493,8 +476,8 @@ class ClarkBackendApi {
       return null;
     }
     try {
-      final decoded = jsonDecode(body);
-      if (decoded is Map) {
+      final decoded = JsonUtil.asMap(JsonUtil.tryDecode(body));
+      if (decoded != null) {
         final code = _asInt(decoded['code']);
         if (code != null && code != 0) {
           return code;
@@ -512,8 +495,8 @@ class ClarkBackendApi {
       return fallback;
     }
     try {
-      final decoded = jsonDecode(body);
-      if (decoded is Map) {
+      final decoded = JsonUtil.asMap(JsonUtil.tryDecode(body));
+      if (decoded != null) {
         final message = decoded['message'];
         if (message is String && message.trim().isNotEmpty) {
           return message.trim();
@@ -570,27 +553,17 @@ class ClarkBackendApi {
   }
 
   List<Course> _parseCourseList(List coursesJson) {
+    final items = JsonUtil.asMapList(coursesJson);
     return [
-      for (var index = 0; index < coursesJson.length; index++)
-        if (coursesJson[index] is Map<String, Object?>)
-          Course.fromJson(
-            coursesJson[index] as Map<String, Object?>,
-            fallbackId: index + 1,
-          )
-        else if (coursesJson[index] is Map)
-          Course.fromJson(
-            (coursesJson[index] as Map).cast<String, Object?>(),
-            fallbackId: index + 1,
-          ),
+      for (var index = 0; index < items.length; index++)
+        Course.fromJson(items[index], fallbackId: index + 1),
     ];
   }
 
   ClarkUser _parseUser(Object? data) {
-    if (data is Map<String, Object?>) {
-      return ClarkUser.fromJson(data);
-    }
-    if (data is Map) {
-      return ClarkUser.fromJson(data.cast<String, Object?>());
+    final map = JsonUtil.asMap(data);
+    if (map != null) {
+      return ClarkUser.fromJson(map);
     }
     throw const ApiException(50003, AppStrings.invalidUserProfileResponse);
   }
