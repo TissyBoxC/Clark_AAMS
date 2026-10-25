@@ -170,25 +170,21 @@ class ClassScheduleStore extends ChangeNotifier {
             expandWholeTermCourses &&
             course.endWeek == oldMaxWeeks)
           course.copyWith(
-            endWeek: newMaxWeeks,
-            activeWeeks: course.activeWeeks.isEmpty
-                ? course.activeWeeks
-                : [
-                    ...course.activeWeeks,
-                    for (
-                      var week = oldMaxWeeks + 1;
-                      week <= newMaxWeeks;
-                      week++
-                    )
-                      week,
-                  ],
+            weekPattern: WeekPattern.fromWeeks([
+              ...course.activeWeeks,
+              for (
+                var week = oldMaxWeeks + 1;
+                week <= newMaxWeeks;
+                week++
+              )
+                week,
+            ]),
           )
         else if (newMaxWeeks < oldMaxWeeks && course.endWeek > newMaxWeeks)
           course.copyWith(
-            endWeek: newMaxWeeks,
-            activeWeeks: course.activeWeeks
-                .where((week) => week <= newMaxWeeks)
-                .toList(),
+            weekPattern: WeekPattern.fromWeeks(
+              course.activeWeeks.where((week) => week <= newMaxWeeks).toList(),
+            ),
           )
         else
           course,

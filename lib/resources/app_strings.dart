@@ -281,6 +281,10 @@ class AppStrings {
       '$startWeek-$endWeek周';
   static String weekListText(String weeks) => '$weeks周';
 
+  /// 单双周标记后缀，用于 WeekPattern.text。
+  static const weekRuleOddSuffix = '(单)';
+  static const weekRuleEvenSuffix = '(双)';
+
   static const widgetFinishedMessages = <String>[
     '今天的课已经上完了',
     '今日课程已全部结束',

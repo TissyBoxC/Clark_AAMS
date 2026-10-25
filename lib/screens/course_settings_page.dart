@@ -207,7 +207,10 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
         result.copyWith(
           teacher: course.teacher,
           rawTime: course.rawTime,
-          activeWeeks: keepParsedWeeks ? course.activeWeeks : const <int>[],
+          // 周次未变时沿用原周次规则，避免把「1-3,5-16」压平成「1-16」
+          weekPattern: keepParsedWeeks
+              ? course.weekPattern
+              : WeekPattern.empty,
           colorValue: course.colorValue,
         ),
       );
