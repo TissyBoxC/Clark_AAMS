@@ -116,11 +116,27 @@ jobs:
             echo "storeFile=release.jks"
           } > android/key.properties
 
+      # 阿里云 Maven 镜像会偶发 502（实测 2026-10-25 一次发布中
+      # maven.aliyun.com 对 com.android.tools:annotations 返回 502，
+      # 导致 62 个依赖同时解析失败，整个构建挂掉）。
+      # 这类失败是网络抖动，重试即可，不该让发布卡住或误报成代码问题。
       - name: Build APK
         run: |
-          flutter build apk --release \
-            --build-name="${{ steps.version.outputs.name }}" \
-            --build-number="${{ steps.version.outputs.code }}"
+          for attempt in 1 2 3; do
+            echo "::group::Build APK attempt $attempt"
+            if flutter build apk --release \
+                --build-name="${{ steps.version.outputs.name }}" \
+                --build-number="${{ steps.version.outputs.code }}"; then
+              echo "::endgroup::"
+              echo "Build succeeded on attempt $attempt"
+              exit 0
+            fi
+            echo "::endgroup::"
+            echo "::warning::Build attempt $attempt failed (常见原因：Maven 镜像 502)，准备重试"
+            sleep $((attempt * 20))
+          done
+          echo "::error::APK 构建连续 3 次失败，请检查依赖源是否可用"
+          exit 1
 
       - name: Build APK (split per ABI)
         run: |
