@@ -45,4 +45,18 @@ flutter {
 
 dependencies {
     implementation("androidx.work:work-runtime-ktx:2.10.3")
+
+    // home_widget 0.9.1 用 "androidx.glance:glance-appwidget:1.+" 这种动态版本，
+    // 会拉到需要 compileSdk 37 的新版 glance，而 AGP 8.11.1 最高只到 36，
+    // 导致 :app:checkReleaseAarMetadata 失败。此处钉死到与 compileSdk 36 兼容的版本。
+    implementation("androidx.glance:glance-appwidget:1.1.1")
+    implementation("androidx.glance:glance:1.1.1")
+}
+
+// 兜底：即使某个插件再次引入动态版本，也统一收敛到上面钉死的版本。
+configurations.all {
+    resolutionStrategy {
+        force("androidx.glance:glance-appwidget:1.1.1")
+        force("androidx.glance:glance:1.1.1")
+    }
 }
