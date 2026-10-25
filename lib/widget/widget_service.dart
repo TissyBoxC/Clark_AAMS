@@ -18,6 +18,8 @@ class WidgetService {
   static const _widgetDataKey = 'course_widget_payload';
   static const _settingsKey = 'class_schedule_settings';
   static const _coursesKey = 'class_schedule_courses';
+  static const _widgetSettingsDataKey = 'course_widget_settings';
+  static const _widgetCoursesDataKey = 'course_widget_courses';
   static const _finishedMessages = AppStrings.widgetFinishedMessages;
   static const _androidSmallWidgetName =
       'io.github.tissyboxc.widget.WidgetUpdateReceiver';
@@ -38,6 +40,15 @@ class WidgetService {
       await HomeWidget.saveWidgetData<String>(
         _widgetDataKey,
         jsonEncode(payload.toJson()),
+      );
+      final prefs = await SharedPreferences.getInstance();
+      await HomeWidget.saveWidgetData<String>(
+        _widgetSettingsDataKey,
+        prefs.getString(_settingsKey) ?? '',
+      );
+      await HomeWidget.saveWidgetData<String>(
+        _widgetCoursesDataKey,
+        prefs.getString(_coursesKey) ?? '',
       );
       for (final widgetName in _androidWidgetNames) {
         await HomeWidget.updateWidget(qualifiedAndroidName: widgetName);

@@ -23,6 +23,16 @@
     <string name="course_widget_sync_failed">数据同步失败</string>
     <string name="course_widget_no_courses_today">今天暂无课程</string>
     <string name="course_widget_room_not_filled">教室未填写</string>
+    <string name="course_widget_week_text">第%1$d周</string>
+    <string name="course_widget_unnamed_course">未命名课程</string>
+    <string name="course_widget_time_not_configured">时间未配置</string>
+    <string name="course_widget_started">已开始</string>
+    <string name="course_widget_remaining">剩余 %1$s</string>
+    <string name="course_widget_lesson_text">第%1$d节</string>
+    <string name="course_widget_lesson_range_text">第%1$d-%2$d节</string>
+    <string name="course_widget_minutes">%1$d分钟</string>
+    <string name="course_widget_hours">%1$d小时</string>
+    <string name="course_widget_hours_minutes">%1$d小时%2$d分钟</string>
     <string name="course_widget_preview_date_medium">今天 / 星期六</string>
     <string name="course_widget_preview_date_small">今天/周六</string>
     <string name="course_widget_preview_week">第11周</string>

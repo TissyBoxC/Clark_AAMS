@@ -69,7 +69,18 @@ open class CourseWidgetProvider : HomeWidgetProvider() {
         appWidgetIds: IntArray,
         widgetData: SharedPreferences,
     ) {
+        CourseWidgetScheduler.ensureScheduled(context)
         updateWidgets(context, appWidgetManager, appWidgetIds, widgetData, null)
+    }
+
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        CourseWidgetScheduler.ensureScheduled(context)
+    }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        CourseWidgetScheduler.cancel(context)
     }
 
     override fun onAppWidgetOptionsChanged(

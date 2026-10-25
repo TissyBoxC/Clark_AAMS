@@ -8,4 +8,5 @@
     android:resizeMode="none"
     android:targetCellHeight="2"
     android:targetCellWidth="2"
+    android:updatePeriodMillis="1800000"
     android:widgetCategory="home_screen" />

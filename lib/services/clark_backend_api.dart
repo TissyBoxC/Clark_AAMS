@@ -221,6 +221,32 @@ class ClarkBackendApi {
     throw const ApiException(50003, AppStrings.invalidQuestionAnalysisResponse);
   }
 
+  Future<Map<String, Object?>> analyzeFillBlankQuestion({
+    required String questionType,
+    required String questionContent,
+    String? material,
+    String? referenceAnswer,
+    String? studentAnswer,
+  }) async {
+    final data = await _post('/api/v1/questions/analyze/fill-blank', {
+      'question_type': questionType,
+      'question_content': questionContent,
+      if (material != null && material.trim().isNotEmpty)
+        'material': material.trim(),
+      if (referenceAnswer != null && referenceAnswer.trim().isNotEmpty)
+        'reference_answer': referenceAnswer.trim(),
+      if (studentAnswer != null && studentAnswer.trim().isNotEmpty)
+        'student_answer': studentAnswer.trim(),
+    }, timeout: _questionAnalyzeTimeout);
+    if (data is Map<String, Object?>) {
+      return data;
+    }
+    if (data is Map) {
+      return data.cast<String, Object?>();
+    }
+    throw const ApiException(50003, AppStrings.invalidQuestionAnalysisResponse);
+  }
+
   Future<ClarkUser> register({
     required String username,
     required String password,

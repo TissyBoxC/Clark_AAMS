@@ -232,14 +232,42 @@ class _ChaoxingHomeworkPageState extends State<ChaoxingHomeworkPage> {
           _status = AppStrings.chaoxingProcessingQuestion(question.number);
         });
 
-        try {
-          final aiResult = await ClarkBackendApi.instance.analyzeQuestion(
-            questionType: question.type,
-            questionContent: question.content,
-            options: question.options,
+        if (question.answered) {
+          _successCount++;
+          setState(
+            () => _status = AppStrings.chaoxingQuestionSkipped(question.number),
           );
-          final letter = ChaoxingQuestionAutomation.extractLetter(aiResult);
-          if (letter == null) {
+          continue;
+        }
+
+        try {
+          final isChoiceQuestion = ChaoxingQuestionAutomation.isChoiceQuestion(
+            question,
+          );
+          final aiResult = isChoiceQuestion
+              ? await ClarkBackendApi.instance.analyzeQuestion(
+                  questionType: question.type,
+                  questionContent: question.content,
+                  options: question.options,
+                )
+              : await ClarkBackendApi.instance.analyzeFillBlankQuestion(
+                  questionType: question.type,
+                  questionContent: question.content,
+                );
+          final letters = isChoiceQuestion
+              ? ChaoxingQuestionAutomation.extractLetters(
+                  aiResult,
+                  questionType: question.type,
+                  options: question.options,
+                )
+              : const <String>[];
+          final textAnswers = isChoiceQuestion
+              ? const <String>[]
+              : ChaoxingQuestionAutomation.extractTextAnswers(
+                  aiResult,
+                  questionType: question.type,
+                );
+          if (letters.isEmpty && textAnswers.isEmpty) {
             _failedCount++;
             setState(
               () => _status = AppStrings.chaoxingNoAnswer(question.number),
@@ -250,7 +278,9 @@ class _ChaoxingHomeworkPageState extends State<ChaoxingHomeworkPage> {
           final clickResult = await _controller.runJavaScriptReturningResult(
             ChaoxingQuestionAutomation.answerQuestionScript(
               question.number,
-              letter,
+              letters: letters,
+              textAnswers: textAnswers,
+              questionType: question.type,
             ),
           );
           final answerResult =
