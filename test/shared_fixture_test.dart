@@ -27,7 +27,12 @@ import 'package:flutter_test/flutter_test.dart';
 /// 然后把下面 expectedSha256Prefix 改成新值（Web 侧同步改）。
 void main() {
   /// 三份副本一致时的 sha256 前缀（与 Web 侧 `shared-fixture.test.ts` 一致）。
-  const expectedSha256Prefix = 'a811360930cbd5c1';
+  ///
+  /// 计算前会把 CRLF 归一成 LF：文件在 git 里存的是 LF，
+  /// 而 Windows 的 autocrlf 会让工作区变成 CRLF。
+  /// 直接对原始字节求摘要，同一份内容在本地与 CI 会得出两个值——
+  /// 那样测的就不是「内容有没有变」，而是「在哪台机器上跑的」。
+  const expectedSha256Prefix = 'eb3760d1decafd71';
 
   final fixtureFile = File('shared/schedule-fixtures.json');
 
@@ -35,7 +40,7 @@ void main() {
     expect(fixtureFile.existsSync(), isTrue,
         reason: '找不到 shared/schedule-fixtures.json');
 
-    final digest = _sha256Hex(fixtureFile.readAsBytesSync());
+    final digest = _sha256Hex(_normalizeNewlines(fixtureFile.readAsBytesSync()));
     expect(
       digest.substring(0, expectedSha256Prefix.length),
       expectedSha256Prefix,
@@ -62,6 +67,18 @@ void main() {
     expect(_sha256Hex(utf8.encode('abc')),
         'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
   });
+}
+
+/// 把 CRLF 归一成 LF，消除平台换行差异对摘要的影响。
+List<int> _normalizeNewlines(List<int> bytes) {
+  final out = <int>[];
+  for (var i = 0; i < bytes.length; i++) {
+    if (bytes[i] == 13 && i + 1 < bytes.length && bytes[i + 1] == 10) {
+      continue; // 跳过 CR，只保留 LF
+    }
+    out.add(bytes[i]);
+  }
+  return out;
 }
 
 /// SHA-256 的纯 Dart 实现。
