@@ -30,6 +30,8 @@ class AuthSession extends ChangeNotifier {
         _user = ClarkUser.empty;
       } else {
         _user = await ClarkBackendApi.instance.currentUser();
+        // 后端自 P0-4 起在 /user/me 不再回传登录码（避免凭据进入日志与缓存）。
+        // 仅在返回了非空码时才覆盖本地缓存。
         if (_user.isAuthenticated && _user.loginCode.isNotEmpty) {
           await AuthTokenStore.instance.saveLoginCode(_user.loginCode);
         }
@@ -53,6 +55,7 @@ class AuthSession extends ChangeNotifier {
       final user = await ClarkBackendApi.instance.currentUser();
       if (user.isAuthenticated) {
         _user = user;
+        // 同上：/user/me 不回传登录码，空值不得覆盖本地缓存
         if (user.loginCode.isNotEmpty) {
           await AuthTokenStore.instance.saveLoginCode(user.loginCode);
         }
