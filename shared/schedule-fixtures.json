@@ -1,0 +1,551 @@
+{
+  "_comment": "课表算法共享 fixture。Dart（App）与 TS（Web）必须对同一组输入产出完全相同的输出。任何一端改动算法后此文件的对应用例必须继续通过。",
+  "_version": 1,
+  "expand": [
+    {
+      "name": "连续区间全周",
+      "ranges": [
+        [
+          1,
+          16
+        ]
+      ],
+      "rule": "ALL",
+      "expected": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ]
+    },
+    {
+      "name": "连续区间取单周",
+      "ranges": [
+        [
+          1,
+          8
+        ]
+      ],
+      "rule": "ODD",
+      "expected": [
+        1,
+        3,
+        5,
+        7
+      ]
+    },
+    {
+      "name": "连续区间取双周",
+      "ranges": [
+        [
+          1,
+          8
+        ]
+      ],
+      "rule": "EVEN",
+      "expected": [
+        2,
+        4,
+        6,
+        8
+      ]
+    },
+    {
+      "name": "单周区间起点为偶数时应取到偶数",
+      "ranges": [
+        [
+          2,
+          9
+        ]
+      ],
+      "rule": "ODD",
+      "expected": [
+        3,
+        5,
+        7,
+        9
+      ]
+    },
+    {
+      "name": "多段区间合并去重并升序",
+      "ranges": [
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          5
+        ]
+      ],
+      "rule": "ALL",
+      "expected": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "name": "多段区间带间隔",
+      "ranges": [
+        [
+          1,
+          2
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          9,
+          9
+        ]
+      ],
+      "rule": "ALL",
+      "expected": [
+        1,
+        2,
+        5,
+        6,
+        9
+      ]
+    },
+    {
+      "name": "空区间",
+      "ranges": [],
+      "rule": "ALL",
+      "expected": []
+    },
+    {
+      "name": "单周单区间",
+      "ranges": [
+        [
+          7,
+          7
+        ]
+      ],
+      "rule": "ODD",
+      "expected": [
+        7
+      ]
+    },
+    {
+      "name": "单周单区间落在双周规则下为空",
+      "ranges": [
+        [
+          8,
+          8
+        ]
+      ],
+      "rule": "ODD",
+      "expected": []
+    },
+    {
+      "name": "周次上限截断到 30",
+      "ranges": [
+        [
+          25,
+          40
+        ]
+      ],
+      "rule": "ALL",
+      "expected": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30
+      ]
+    }
+  ],
+  "fromWeeks": [
+    {
+      "name": "连续周次合并为一个区间",
+      "weeks": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "expectedRanges": [
+        [
+          1,
+          5
+        ]
+      ],
+      "expectedRule": "ALL",
+      "expectedExpand": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "name": "纯奇数识别为单周",
+      "weeks": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "expectedRanges": [
+        [
+          1,
+          7
+        ]
+      ],
+      "expectedRule": "ODD",
+      "expectedExpand": [
+        1,
+        3,
+        5,
+        7
+      ]
+    },
+    {
+      "name": "纯偶数识别为双周",
+      "weeks": [
+        2,
+        4,
+        6,
+        8
+      ],
+      "expectedRanges": [
+        [
+          2,
+          8
+        ]
+      ],
+      "expectedRule": "EVEN",
+      "expectedExpand": [
+        2,
+        4,
+        6,
+        8
+      ]
+    },
+    {
+      "name": "单个周次不判定单双周",
+      "weeks": [
+        5
+      ],
+      "expectedRanges": [
+        [
+          5,
+          5
+        ]
+      ],
+      "expectedRule": "ALL",
+      "expectedExpand": [
+        5
+      ]
+    },
+    {
+      "name": "乱序输入先排序",
+      "weeks": [
+        5,
+        1,
+        3
+      ],
+      "expectedRanges": [
+        [
+          1,
+          5
+        ]
+      ],
+      "expectedRule": "ODD",
+      "expectedExpand": [
+        1,
+        3,
+        5
+      ]
+    },
+    {
+      "name": "重复输入去重",
+      "weeks": [
+        1,
+        1,
+        2,
+        2,
+        3
+      ],
+      "expectedRanges": [
+        [
+          1,
+          3
+        ]
+      ],
+      "expectedRule": "ALL",
+      "expectedExpand": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "越界周次被丢弃",
+      "weeks": [
+        0,
+        1,
+        2,
+        31,
+        99
+      ],
+      "expectedRanges": [
+        [
+          1,
+          2
+        ]
+      ],
+      "expectedRule": "ALL",
+      "expectedExpand": [
+        1,
+        2
+      ]
+    },
+    {
+      "name": "空输入",
+      "weeks": [],
+      "expectedRanges": [],
+      "expectedRule": "ALL",
+      "expectedExpand": []
+    },
+    {
+      "name": "非连续周次拆成多段",
+      "weeks": [
+        1,
+        2,
+        5,
+        6,
+        9
+      ],
+      "expectedRanges": [
+        [
+          1,
+          2
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          9,
+          9
+        ]
+      ],
+      "expectedRule": "ALL",
+      "expectedExpand": [
+        1,
+        2,
+        5,
+        6,
+        9
+      ]
+    }
+  ],
+  "endTime": [
+    {
+      "name": "整点加时长",
+      "start": "08:00",
+      "duration": 45,
+      "expected": "08:45"
+    },
+    {
+      "name": "跨小时",
+      "start": "08:45",
+      "duration": 45,
+      "expected": "09:30"
+    },
+    {
+      "name": "连续两节",
+      "start": "08:00",
+      "duration": 90,
+      "expected": "09:30"
+    },
+    {
+      "name": "跨中午",
+      "start": "11:45",
+      "duration": 45,
+      "expected": "12:30"
+    },
+    {
+      "name": "跨天归零",
+      "start": "23:30",
+      "duration": 60,
+      "expected": "00:30"
+    },
+    {
+      "name": "全角冒号容错",
+      "start": "08：00",
+      "duration": 45,
+      "expected": "08:45"
+    },
+    {
+      "name": "非法输入原样返回",
+      "start": "800",
+      "duration": 45,
+      "expected": "800"
+    }
+  ],
+  "isTimeListValid": [
+    {
+      "name": "合法作息",
+      "times": [
+        "08:00",
+        "08:45",
+        "09:30"
+      ],
+      "expected": true
+    },
+    {
+      "name": "空列表",
+      "times": [],
+      "expected": false
+    },
+    {
+      "name": "缺少分钟",
+      "times": [
+        "08"
+      ],
+      "expected": false
+    },
+    {
+      "name": "小时越界",
+      "times": [
+        "25:00"
+      ],
+      "expected": false
+    },
+    {
+      "name": "分钟越界",
+      "times": [
+        "08:60"
+      ],
+      "expected": false
+    },
+    {
+      "name": "24:00 合法",
+      "times": [
+        "24:00"
+      ],
+      "expected": true
+    },
+    {
+      "name": "24:01 不合法",
+      "times": [
+        "24:01"
+      ],
+      "expected": false
+    },
+    {
+      "name": "含非数字",
+      "times": [
+        "ab:cd"
+      ],
+      "expected": false
+    },
+    {
+      "name": "混入一个非法项即整体非法",
+      "times": [
+        "08:00",
+        "bad"
+      ],
+      "expected": false
+    }
+  ],
+  "currentWeek": [
+    {
+      "name": "学期首日为第 1 周",
+      "termStartDate": "2026-09-07",
+      "today": "2026-09-07",
+      "maxWeeks": 20,
+      "expected": 1
+    },
+    {
+      "name": "首周最后一天仍是第 1 周",
+      "termStartDate": "2026-09-07",
+      "today": "2026-09-13",
+      "maxWeeks": 20,
+      "expected": 1
+    },
+    {
+      "name": "第 8 天进入第 2 周",
+      "termStartDate": "2026-09-07",
+      "today": "2026-09-14",
+      "maxWeeks": 20,
+      "expected": 2
+    },
+    {
+      "name": "开学前被夹紧到第 1 周",
+      "termStartDate": "2026-09-07",
+      "today": "2026-08-01",
+      "maxWeeks": 20,
+      "expected": 1
+    },
+    {
+      "name": "超过学期上限被夹紧",
+      "termStartDate": "2026-09-07",
+      "today": "2027-06-01",
+      "maxWeeks": 20,
+      "expected": 20
+    },
+    {
+      "name": "未设置学期起始时默认第 1 周",
+      "termStartDate": "",
+      "today": "2026-09-07",
+      "maxWeeks": 20,
+      "expected": 1
+    },
+    {
+      "name": "跨年第 19 周",
+      "termStartDate": "2026-09-07",
+      "today": "2027-01-11",
+      "maxWeeks": 25,
+      "expected": 19
+    }
+  ],
+  "lessonCount": [
+    {
+      "name": "不足 13 节补到 13",
+      "startTimesLength": 8,
+      "maxEndLesson": 0,
+      "expected": 13
+    },
+    {
+      "name": "常规 12 节作息补到 13",
+      "startTimesLength": 12,
+      "maxEndLesson": 12,
+      "expected": 13
+    },
+    {
+      "name": "课程超出作息表时扩展",
+      "startTimesLength": 12,
+      "maxEndLesson": 15,
+      "expected": 15
+    },
+    {
+      "name": "超过 30 时截断",
+      "startTimesLength": 12,
+      "maxEndLesson": 40,
+      "expected": 30
+    }
+  ]
+}

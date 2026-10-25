@@ -113,12 +113,18 @@ class ScheduleUtils {
   }
 
   static String endTime(String startTime, int durationMinutes) {
-    final parts = startTime.split(':');
+    // 全角冒号来自用户手输或某些导入源，先归一化再解析；
+    // 原实现直接 split(':') 会得到单元素，从而把非法输入原样返回。
+    final normalized = startTime.replaceAll('：', ':').trim();
+    final parts = normalized.split(':');
     if (parts.length < 2) {
       return startTime;
     }
-    var hour = int.tryParse(parts[0]) ?? 0;
-    var minute = int.tryParse(parts[1]) ?? 0;
+    var hour = int.tryParse(parts[0]);
+    var minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) {
+      return startTime;
+    }
     minute += durationMinutes;
     hour = (hour + minute ~/ 60) % 24;
     minute = minute % 60;

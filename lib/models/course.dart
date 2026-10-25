@@ -94,11 +94,20 @@ class WeekPattern {
 
   bool get isEmpty => expand().isEmpty;
 
+  /// 周次上限。超过这个值的周次在任何环节都不应出现。
+  static const int maxWeek = 30;
+
   /// 展开为升序离散周次。
+  ///
+  /// 越界周次在这里统一裁掉：`fromWeeks` 会在入口过滤，
+  /// 但直接构造的 `WeekPattern`（如后端返回 `[25,40]`）也必须有防线，
+  /// 否则「第 40 周」会渗到周视图与今日视图里。
   List<int> expand() {
     final result = <int>{};
     for (final range in ranges) {
-      for (var week = range.start; week <= range.end; week++) {
+      final from = range.start < 1 ? 1 : range.start;
+      final to = range.end > maxWeek ? maxWeek : range.end;
+      for (var week = from; week <= to; week++) {
         if (rule == WeekRule.odd && week.isEven) continue;
         if (rule == WeekRule.even && week.isOdd) continue;
         result.add(week);
@@ -137,11 +146,14 @@ class WeekPattern {
     }
 
     final ranges = <WeekRange>[];
+    // 判定出单/双周后，区间按步长 2 合并：[1,3,5,7] => [1,7]+ODD，
+    // 展示为「1-7周(单)」。expand() 会按 rule 过滤，语义等价。
+    final step = rule == WeekRule.all ? 1 : 2;
     var start = sorted.first;
     var prev = start;
     for (var i = 1; i < sorted.length; i++) {
       final current = sorted[i];
-      if (current == prev + 1) {
+      if (current == prev + step) {
         prev = current;
         continue;
       }
