@@ -6,15 +6,20 @@ enum WeekRule {
   odd,
   even;
 
+  /// 解析线格式的单双周标记。
+  ///
+  /// 服务端与 App 都输出大写，但历史数据、手工编辑的 JSON、
+  /// 以及第三方导入源可能出现小写或带空白，这里统一做规范化，
+  /// 否则「odd」会被静默当成全周——错得不明显但结果全错。
   static WeekRule fromWire(Object? value) {
-    switch (value) {
-      case 'ODD':
-        return WeekRule.odd;
-      case 'EVEN':
-        return WeekRule.even;
-      default:
-        return WeekRule.all;
+    final normalized = value?.toString().trim().toUpperCase();
+    if (normalized == 'ODD') {
+      return WeekRule.odd;
     }
+    if (normalized == 'EVEN') {
+      return WeekRule.even;
+    }
+    return WeekRule.all;
   }
 
   String get wire {

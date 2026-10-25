@@ -337,6 +337,76 @@ class ClarkBackendApi {
     await _post('/api/v1/user/logout', {});
   }
 
+  /// 拉取服务端保存的「我的课表」（P3-1）。
+  ///
+  /// 服务端返回的字段与 [Course.fromJson] 已对齐（含 weekRanges/weekRule），
+  /// 因此直接复用同一个解析入口，不需要第二套映射。
+  Future<List<Course>> fetchMyCourses() async {
+    final data = await _get('/api/v1/courses/schedule');
+    if (data is! List) {
+      throw const ApiException(50003, AppStrings.invalidBackendResponse);
+    }
+    return [
+      for (var i = 0; i < data.length; i++)
+        if (data[i] is Map)
+          Course.fromJson((data[i] as Map).cast<String, Object?>(), fallbackId: i + 1),
+    ];
+  }
+
+  /// 用一组课程整体覆盖服务端课表。
+  Future<List<Course>> replaceMyCourses(List<Course> courses) async {
+    final data = await _send(
+      'PUT',
+      '/api/v1/courses/schedule',
+      body: [for (final course in courses) _coursePayload(course)],
+    );
+    if (data is! List) {
+      throw const ApiException(50003, AppStrings.invalidBackendResponse);
+    }
+    return [
+      for (var i = 0; i < data.length; i++)
+        if (data[i] is Map)
+          Course.fromJson((data[i] as Map).cast<String, Object?>(), fallbackId: i + 1),
+    ];
+  }
+
+  /// 删除服务端的一门课。
+  Future<void> deleteMyCourse(int courseId) async {
+    await _send('DELETE', '/api/v1/courses/schedule/$courseId');
+  }
+
+  /// 清空服务端课表，返回删除条数。
+  Future<int> clearMyCourses() async {
+    final data = await _send('DELETE', '/api/v1/courses/schedule');
+    if (data is Map) {
+      final removed = data['removed'];
+      if (removed is int) {
+        return removed;
+      }
+      if (removed is num) {
+        return removed.toInt();
+      }
+    }
+    return 0;
+  }
+
+  /// 写请求只提交真相源字段，派生字段交给服务端计算。
+  Map<String, Object?> _coursePayload(Course course) {
+    return {
+      'name': course.name,
+      'dayOfWeek': course.dayOfWeek,
+      'startLesson': course.startLesson,
+      'endLesson': course.endLesson,
+      'location': course.location,
+      'teacher': course.teacher,
+      'rawTime': course.rawTime,
+      'weekRanges': [
+        for (final range in course.weekPattern.ranges) [range.start, range.end],
+      ],
+      'weekRule': course.weekPattern.rule.wire,
+    };
+  }
+
   Future<Object?> _get(String path) async {
     final response = await _client
         .get(
@@ -361,6 +431,28 @@ class ClarkBackendApi {
           body: jsonEncode(body),
         )
         .timeout(timeout);
+    return _unwrap(response);
+  }
+
+  /// 通用请求：课表资源需要 PUT/DELETE，而 [http.Client] 没有统一入口。
+  ///
+  /// [body] 可以是 Map（单个对象）或 List（批量），为 null 时不带请求体。
+  Future<Object?> _send(
+    String method,
+    String path, {
+    Object? body,
+    Duration timeout = _timeout,
+  }) async {
+    final headers = await AuthTokenStore.instance.authHeaders(
+      contentTypeJson: body != null,
+    );
+    final request = http.Request(method, BackendConfig.uri(path))
+      ..headers.addAll(headers);
+    if (body != null) {
+      request.body = jsonEncode(body);
+    }
+    final streamed = await _client.send(request).timeout(timeout);
+    final response = await http.Response.fromStream(streamed);
     return _unwrap(response);
   }
 
