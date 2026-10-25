@@ -10,6 +10,7 @@ import '../config/backend_config.dart';
 import '../models/app_version.dart';
 import '../models/clark_user.dart';
 import '../models/course.dart';
+import '../models/error_codes.dart';
 import '../models/school.dart';
 import '../models/school_lesson_times.dart';
 import '../models/user_role.dart';
@@ -190,24 +191,16 @@ class ClarkBackendApi {
           headers: await AuthTokenStore.instance.authHeaders(),
         )
         .timeout(_timeout);
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(
-        response.statusCode,
-        _responseErrorMessage(
-          response,
-          AppStrings.pickupCodeFetchFailed(response.statusCode),
-        ),
-      );
-    }
 
-    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-    if (decoded is! List) {
+    // P2-2：后端已统一为 {code,message,data} 信封，data 为课程数组。
+    final data = _unwrap(response);
+    if (data is! List) {
       throw const ApiException(
         50003,
         AppStrings.invalidPickupCourseDataResponse,
       );
     }
-    return _parseCourseList(decoded);
+    return _parseCourseList(data);
   }
 
   Future<AppVersionInfo> checkVersion({
@@ -373,12 +366,16 @@ class ClarkBackendApi {
 
   Object? _unwrap(http.Response response) {
     if (response.statusCode < 200 || response.statusCode >= 300) {
+      // 优先用信封里的业务码（如 42901），拿不到才退回 HTTP 状态码，
+      // 这样页面能区分「配额用尽」和「限流」这类语义不同的 429。
+      final businessCode = _businessCodeOf(response);
       throw ApiException(
-        response.statusCode,
+        businessCode ?? response.statusCode,
         _responseErrorMessage(
           response,
           AppStrings.backendRequestFailed(response.statusCode),
         ),
+        status: response.statusCode,
       );
     }
 
@@ -395,6 +392,26 @@ class ClarkBackendApi {
       throw ApiException(code, message);
     }
     return decoded['data'];
+  }
+
+  /// 从错误响应体里取信封业务码；没有就返回 null。
+  int? _businessCodeOf(http.Response response) {
+    final body = utf8.decode(response.bodyBytes).trim();
+    if (body.isEmpty) {
+      return null;
+    }
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map) {
+        final code = _asInt(decoded['code']);
+        if (code != null && code != 0) {
+          return code;
+        }
+      }
+    } catch (_) {
+      // 非 JSON 响应（网关 HTML 等），退回 HTTP 状态码
+    }
+    return null;
   }
 
   String _responseErrorMessage(http.Response response, String fallback) {
@@ -508,10 +525,29 @@ class CoursePickupResult {
 }
 
 class ApiException implements Exception {
-  const ApiException(this.code, this.message);
+  const ApiException(this.code, this.message, {this.status});
 
+  /// 后端业务码（见 [ErrorCodes]）；网络层错误时可能为 HTTP 状态码。
   final int code;
+
   final String message;
+
+  /// HTTP 状态码，部分错误（如未带信封的网关错误）才有。
+  final int? status;
+
+  /// 错误分类（P2-3），页面据此决定跳登录 / 提示无权限 / 提示明天再试。
+  ErrorKind get kind {
+    // 业务码与 HTTP 状态码可能混用（_unwrap 在无信封时用状态码当 code），
+    // 这里两个都交给分类器，由它按分段规则裁决。
+    final fromCode = classifyError(code, status: status);
+    if (fromCode != ErrorKind.unknown) {
+      return fromCode;
+    }
+    return classifyError(null, status: status ?? code);
+  }
+
+  /// 该错误是否值得让用户原地重试（配额用尽重试无意义）。
+  bool get retryable => isRetryable(kind);
 
   @override
   String toString() => message;
