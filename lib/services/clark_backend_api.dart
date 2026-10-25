@@ -12,8 +12,38 @@ import '../models/clark_user.dart';
 import '../models/course.dart';
 import '../models/school.dart';
 import '../models/school_lesson_times.dart';
+import '../models/user_role.dart';
 import '../resources/app_strings.dart';
 import 'auth_token_store.dart';
+
+/// 统一身份快照（`GET /api/v1/auth/me`）。
+class AuthIdentity {
+  const AuthIdentity({
+    required this.role,
+    required this.authenticated,
+    required this.displayName,
+    this.user,
+  });
+
+  /// 未登录。
+  static const guest = AuthIdentity(
+    role: UserRole.guest,
+    authenticated: false,
+    displayName: '',
+  );
+
+  final UserRole role;
+  final bool authenticated;
+
+  /// 展示名：管理员为后台账号名，用户为用户名/邮箱。
+  final String displayName;
+
+  /// 用户资料；管理员或未登录时为 null。
+  final ClarkUser? user;
+
+  bool get isAdmin => role.isAdmin;
+  bool get isAuthenticated => authenticated && role.isAuthenticated;
+}
 
 class ClarkBackendApi {
   ClarkBackendApi({http.Client? client}) : _client = client ?? http.Client();
@@ -278,6 +308,35 @@ class ClarkBackendApi {
 
   Future<ClarkUser> currentUser() async {
     final data = await _get('/api/v1/user/me');
+    return _parseUser(data);
+  }
+
+  /// 查询统一身份（角色 + 资料）。
+  ///
+  /// 后端用一个接口回答「我是谁、什么角色」，
+  /// App 不再需要分别推断用户态与管理态。
+  Future<AuthIdentity> fetchIdentity() async {
+    final data = await _get('/api/v1/auth/me');
+    if (data is! Map) {
+      return AuthIdentity.guest;
+    }
+    final rawUser = data['user'];
+    return AuthIdentity(
+      role: UserRole.fromWire(data['role']),
+      authenticated: data['authenticated'] == true,
+      displayName: (data['displayName'] as String? ?? '').trim(),
+      user: rawUser is Map
+          ? ClarkUser.fromJson(Map<String, Object?>.from(rawUser))
+          : null,
+    );
+  }
+
+  /// 退出所有设备：吊销旧登录码并换取新的。
+  ///
+  /// 返回的新登录码由调用方立即写入 [AuthTokenStore]，
+  /// 旧码从此失效（其它设备的会话下次请求即被拒）。
+  Future<ClarkUser> rotateLoginCode() async {
+    final data = await _post('/api/v1/user/login-code/rotate', {});
     return _parseUser(data);
   }
 
