@@ -59,6 +59,22 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "tag: $TAG"
 
+      # 发布前校验版本一致性：tag 的版本必须等于 pubspec 的 version。
+      # 之前 tag 已经打到 v1.5.0，pubspec 却还停在 1.1.0+18，
+      # 结果 v1.5.0 的 Release 里装着「1.1.0 (build 18)」的 APK ——
+      # 用户装上后应用内显示的版本号是错的，也无法据此判断是否该更新。
+      - name: Verify tag matches pubspec version
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          PUB="${{ steps.version.outputs.name }}"
+          TAG_VERSION=$(echo "$TAG" | sed -E 's/^v//' | cut -d+ -f1)
+          if [ "$TAG_VERSION" != "$PUB" ]; then
+            echo "::error::版本不一致：tag 是 $TAG（版本 $TAG_VERSION），但 pubspec.yaml 是 $PUB"
+            echo "发布前请把 pubspec.yaml 的 version 改成与 tag 一致，例如：version=$TAG_VERSION+<递增的构建号>"
+            exit 1
+          fi
+          echo "版本一致：tag=$TAG, pubspec=$PUB"
+
       - name: Ensure Android SDK platform 36
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
