@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_settings.dart';
 import '../models/course.dart';
 import '../widget/widget_service.dart';
+import 'course_importer.dart';
 
 class ClassScheduleStore extends ChangeNotifier {
   ClassScheduleStore._(this._prefs, this.settings, this._courses);
@@ -132,13 +133,24 @@ class ClassScheduleStore extends ChangeNotifier {
     await _saveCourses();
   }
 
-  Future<void> importCourses(List<Course> courses) async {
-    final next = [..._courses];
-    for (final course in courses) {
-      next.add(course.copyWith(id: _nextCourseId()));
-    }
-    _courses = next;
+  /// 导入课程。
+  ///
+  /// 原实现是无条件追加，同一个课表连点两次导入课程数会翻倍（B7）。
+  /// 现在按 [ImportMode] 去重：[ImportMode.merge] 为默认，
+  /// 同名同时间同地点同周次的课程会被更新而非重复添加。
+  Future<ImportOutcome> importCourses(
+    List<Course> courses, {
+    ImportMode mode = ImportMode.merge,
+  }) async {
+    final outcome = CourseImporter.apply(
+      existing: _courses,
+      incoming: courses,
+      mode: mode,
+      nextId: _nextCourseId,
+    );
+    _courses = outcome.courses;
     await _saveCourses();
+    return outcome;
   }
 
   Future<void> updateCourse(int id, Course course) async {
@@ -214,8 +226,24 @@ class ClassScheduleStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 分配下一个课程 id。
+  ///
+  /// 修复 B3：原实现只读 `_nextCourseIdKey`，但该键在重新加载、
+  /// 删除后不会回退，若课程由 `fallbackId`（按数组下标）恢复、
+  /// 或用户在别处清掉该键，就会发出与现有课程重复的 id，
+  /// 导致 `updateCourse` / `deleteCourse` 一次命中多门课。
+  ///
+  /// 现在取「持久化计数器」与「现有最大 id + 1」的较大值，
+  /// 保证新 id 恒大于全部已有 id。
   int _nextCourseId() {
-    final nextId = _prefs.getInt(_nextCourseIdKey) ?? 1;
+    final stored = _prefs.getInt(_nextCourseIdKey) ?? 1;
+    var maxExisting = 0;
+    for (final course in _courses) {
+      if (course.id > maxExisting) {
+        maxExisting = course.id;
+      }
+    }
+    final nextId = stored > maxExisting ? stored : maxExisting + 1;
     _prefs.setInt(_nextCourseIdKey, nextId + 1);
     return nextId;
   }

@@ -593,7 +593,8 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
     if (customizedCourses == null) {
       return false;
     }
-    await store.importCourses(customizedCourses);
+    // 默认 merge：重复导入同一份课表不会让课程翻倍
+    final outcome = await store.importCourses(customizedCourses);
     await store.updateSettings(
       store.settings.copyWith(
         isFirstLaunch: false,
@@ -603,6 +604,24 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
         startTimes: setup.startTimes,
       ),
     );
+    if (!mounted) {
+      return true;
+    }
+    if (outcome.added == 0 && outcome.updated == 0) {
+      AppSnackBar.show(
+        context,
+        AppStrings.importUnchanged(outcome.skipped),
+      );
+    } else {
+      AppSnackBar.show(
+        context,
+        AppStrings.importSummary(
+          added: outcome.added,
+          updated: outcome.updated,
+          skipped: outcome.skipped,
+        ),
+      );
+    }
     return true;
   }
 

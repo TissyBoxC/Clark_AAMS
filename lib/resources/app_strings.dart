@@ -285,6 +285,23 @@ class AppStrings {
   static const weekRuleOddSuffix = '(单)';
   static const weekRuleEvenSuffix = '(双)';
 
+  /// 导入结果提示：有新增或更新。
+  static String importSummary({
+    required int added,
+    required int updated,
+    required int skipped,
+  }) {
+    final parts = <String>[];
+    if (added > 0) parts.add('新增 $added');
+    if (updated > 0) parts.add('更新 $updated');
+    if (skipped > 0) parts.add('未变化 $skipped');
+    return '导入完成：${parts.join('，')}';
+  }
+
+  /// 导入结果提示：与现有课表完全一致。
+  static String importUnchanged(int skipped) =>
+      skipped > 0 ? '课表没有变化（$skipped 门课程已存在）' : '没有可导入的课程';
+
   static const widgetFinishedMessages = <String>[
     '今天的课已经上完了',
     '今日课程已全部结束',
