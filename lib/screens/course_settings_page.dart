@@ -10,13 +10,14 @@ import '../resources/app_strings.dart';
 import '../screens/academic_import_page.dart';
 import 'course_settings/course_list_widgets.dart';
 import 'course_settings/course_settings_dialogs.dart';
+import 'course_settings/course_settings_helpers.dart';
+import 'course_settings/course_settings_top_bar.dart';
 import '../services/clark_backend_api.dart';
 import '../services/lesson_time_defaults.dart';
 import '../services/schedule_scope.dart';
 import '../services/schedule_utils.dart';
 import '../widgets/app_snack_bar.dart';
 import '../widgets/course_form_dialog.dart';
-import '../widgets/top_bar.dart';
 import 'home_page.dart';
 import 'term_lesson_setup_page.dart';
 import 'welcome_page.dart';
@@ -43,47 +44,15 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
         children: [
           Column(
             children: [
-              TopBar(
-                title: AppStrings.courseSettingsTitle,
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: _goBack,
-                ),
-                trailing: _batchDeleteMode
-                    ? const SizedBox(width: 48)
-                    : PopupMenuButton<_CourseMenu>(
-                        icon: const Icon(
-                          Icons.more_horiz,
-                          color: Color(0xff808080),
-                        ),
-                        onSelected: (value) {
-                          switch (value) {
-                            case _CourseMenu.importSchedule:
-                              _showImportMethodSheet();
-                            case _CourseMenu.batchAdd:
-                              _showBatchAddDialog();
-                            case _CourseMenu.batchDelete:
-                              setState(() {
-                                _batchDeleteMode = true;
-                                _selectedIds.clear();
-                              });
-                          }
-                        },
-                        itemBuilder: (context) => const [
-                          PopupMenuItem(
-                            value: _CourseMenu.importSchedule,
-                            child: Text(AppStrings.importCourses),
-                          ),
-                          PopupMenuItem(
-                            value: _CourseMenu.batchAdd,
-                            child: Text(AppStrings.batchAdd),
-                          ),
-                          PopupMenuItem(
-                            value: _CourseMenu.batchDelete,
-                            child: Text(AppStrings.batchDelete),
-                          ),
-                        ],
-                      ),
+              CourseSettingsTopBar(
+                batchDeleteMode: _batchDeleteMode,
+                onBack: _goBack,
+                onImport: _showImportMethodSheet,
+                onBatchAdd: _showBatchAddDialog,
+                onBatchDelete: () => setState(() {
+                  _batchDeleteMode = true;
+                  _selectedIds.clear();
+                }),
               ),
               Expanded(
                 child: courses.isEmpty
@@ -517,11 +486,7 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
     );
   }
 
-  bool _canUseAcademicImport(School school) {
-    return school.supportsAcademicImport &&
-        school.login.mode == 'webview' &&
-        school.login.loginUrl.isNotEmpty;
-  }
+  bool _canUseAcademicImport(School school) => canUseAcademicImport(school);
 
   Future<School?> _loadSelectedSchool(String schoolId) async {
     if (schoolId.isEmpty) {
@@ -575,7 +540,7 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
   }
 
   void _showUnavailable(String message) {
-    AppSnackBar.show(context, message);
+    AppSnackBar.show(context, unavailableMessage(message));
   }
 
   Future<bool> _importCoursesAndSetTermStart(List<Course> courses) async {
@@ -678,6 +643,5 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
   }
 }
 
-enum _CourseMenu { importSchedule, batchAdd, batchDelete }
 
 enum _ImportMethod { ocr, pickupCode, academic }
