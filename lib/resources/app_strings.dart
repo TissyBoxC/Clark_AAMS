@@ -5,6 +5,7 @@ class AppStrings {
 
   static const appName = '珂拉课程表';
   static const updateAvailableTitle = '发现新版本';
+  // 显示在用户名位置，空间有限，保持短词
   static const notLoggedIn = '未登录';
   static const notGenerated = '未生成';
   static const unknownQuestionType = '未知题型';
@@ -235,7 +236,7 @@ class AppStrings {
   static const addWidgetManualMessage = '不同系统添加小组件方式不同，请前往用户手册查看符合你系统的添加方式。';
   static const close = '关闭';
   static const openWebsite = '前往官网';
-  static const chaoxingLoginRequiredFromHome = '请先登录后再使用学习通作业辅助';
+  static const chaoxingLoginRequiredFromHome = '用做题辅助前要先登录学习通。点这里回到学习通登录页。';
   static const goLogin = '去登录';
   static const mineSpace = '我的空间';
   static String mineUsage(String name, int count) => '$name，已使用 $count 次做题辅助';
@@ -347,7 +348,7 @@ class AppStrings {
   static String chaoxingPageLoadFailed(String error) => '页面加载失败：$error';
   static const chaoxingReload = '重新加载';
   static const chaoxingBackHome = '回到学习通首页';
-  static const chaoxingLoginRequired = '请先登录后再使用做题辅助';
+  static const chaoxingLoginRequired = '还没有登录学习通。登录之后就能用做题辅助了。';
   static const chaoxingReadingPage = '正在读取当前页面';
   static const chaoxingNoQuestions = '当前页面未识别到题目';
   static String chaoxingFoundQuestions(int count) => '共找到 $count 道题';
