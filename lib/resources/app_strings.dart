@@ -211,6 +211,8 @@ class AppStrings {
   static const scheduleTab = '课程表';
   static const mineTab = '我的';
   static const noCoursesToday = '今天没有课，可以休息一下';
+  /// 一门课都还没有时不能说「今天没有课」——那会让人以为课表是空的但不用管。
+  static const noCoursesYet = '还没有课表。先去「我的」里导入或添加课程。';
   static const coursesFinishedToday = '今天的课已经上完了';
   static const courseCount = '课程总数';
   static const currentWeekLabel = '本周';

@@ -31,9 +31,13 @@ class HomeTab extends StatelessWidget {
     final todayCourses = allTodayCourses
         .where((course) => isCourseNotFinished(settings, course, today))
         .toList();
-    final todayStatusText = allTodayCourses.isEmpty
-        ? AppStrings.noCoursesToday
-        : AppStrings.coursesFinishedToday;
+    // 三种情况要分开说：一门课都没有 / 今天没课 / 今天的课上完了。
+    // 混成一句会让刚装好应用的人以为「今天没课」是正常状态。
+    final todayStatusText = store.courses.isEmpty
+        ? AppStrings.noCoursesYet
+        : allTodayCourses.isEmpty
+            ? AppStrings.noCoursesToday
+            : AppStrings.coursesFinishedToday;
 
     return Column(
       children: [

@@ -77,4 +77,16 @@ void main() {
       expect(message, isNot(contains('HTTP')));
     });
   });
+
+  group('空课表与今天没课不是一回事', () {
+    // 一门课都没有时，如果说「今天没有课」，用户会以为课表是空的但无需处理。
+    // 这两句必须不同，且空课表那句要指向下一步。
+    test('两种空状态的文案不同', () {
+      expect(AppStrings.noCoursesYet, isNot(equals(AppStrings.noCoursesToday)));
+    });
+
+    test('还没有课表时给出下一步', () {
+      expect(AppStrings.noCoursesYet, contains('导入'));
+    });
+  });
 }
