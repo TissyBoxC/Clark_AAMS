@@ -26,6 +26,23 @@ subprojects {
 // 注意：必须在下面的 evaluationDependsOn(":app") 之前注册 afterEvaluate，
 // 否则子项目已求值完成，afterEvaluate 会直接报错。
 subprojects {
+    // 全局钉死插件带入的动态版本。
+    // 背景：home_widget 0.9.1 用 "1.+" / "2.+" 声明依赖，解析这类版本
+    // 必须先拉 maven-metadata.xml，离线构建会直接失败。
+    // 只在 :app 里 force 不够——:home_widget 自己的 compileClasspath
+    // 同样会去解析动态版本，所以必须在这个层级统一收敛。
+    configurations.all {
+        resolutionStrategy {
+            force("androidx.glance:glance-appwidget:1.1.1")
+            force("androidx.glance:glance:1.1.1")
+            force("androidx.work:work-runtime-ktx:2.12.0")
+            force("androidx.work:work-runtime:2.12.0")
+            force("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
+        }
+    }
+}
+
+subprojects {
     afterEvaluate {
         extensions.findByName("android")?.let {
             (it as? com.android.build.gradle.BaseExtension)?.compileOptions?.apply {

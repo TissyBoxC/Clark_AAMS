@@ -210,7 +210,7 @@ class AppStrings {
   static const homeTab = '首页';
   static const scheduleTab = '课程表';
   static const mineTab = '我的';
-  static const noCoursesToday = '今天没有课程安排';
+  static const noCoursesToday = '今天没有课，可以休息一下';
   static const coursesFinishedToday = '今天的课已经上完了';
   static const courseCount = '课程总数';
   static const currentWeekLabel = '本周';
@@ -312,7 +312,7 @@ class AppStrings {
     '今天课程收工了',
   ];
   static const widgetSyncFailed = '数据同步失败';
-  static const widgetNoCoursesToday = '今天暂无课程';
+  static const widgetNoCoursesToday = '今天没有课';
   static const widgetTimeNotConfigured = '时间未配置';
   static const widgetStarted = '已开始';
   static String widgetRemaining(String duration) => '剩余 $duration';
