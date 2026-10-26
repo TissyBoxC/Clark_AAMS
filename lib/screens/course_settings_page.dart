@@ -59,7 +59,7 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
                     ? const Center(
                         child: Text(
                           AppStrings.chooseImportFromTopRight,
-                          style: TextStyle(color: Color(0xff808080)),
+                          style: TextStyle(color: Color(0xff6b4f5a)),
                         ),
                       )
                     : ListView.builder(
@@ -220,7 +220,7 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
               onPressed: () => Navigator.of(context).pop(true),
               child: const Text(
                 AppStrings.delete,
-                style: TextStyle(color: Color(0xffff3f15)),
+                style: TextStyle(color: Color(0xffb3304a)),
               ),
             ),
           ],
@@ -264,7 +264,7 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
               onPressed: () => Navigator.of(context).pop(true),
               child: const Text(
                 AppStrings.confirmDelete,
-                style: TextStyle(color: Color(0xffff3f15)),
+                style: TextStyle(color: Color(0xffb3304a)),
               ),
             ),
           ],

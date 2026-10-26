@@ -53,7 +53,7 @@ class _WelcomePageState extends State<WelcomePage> {
               const SizedBox(height: 8),
               const Text(
                 AppStrings.chooseSchoolSubtitle,
-                style: TextStyle(color: Color(0xff808080)),
+                style: TextStyle(color: Color(0xff6b4f5a)),
               ),
               const SizedBox(height: 18),
               TextField(
@@ -220,7 +220,7 @@ class _LoadError extends StatelessWidget {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xff808080)),
+            style: const TextStyle(color: Color(0xff6b4f5a)),
           ),
           const SizedBox(height: 12),
           OutlinedButton(
@@ -241,7 +241,7 @@ class _EmptySearchResult extends StatelessWidget {
     return const Center(
       child: Text(
         AppStrings.noMatchedSchool,
-        style: TextStyle(color: Color(0xff808080)),
+        style: TextStyle(color: Color(0xff6b4f5a)),
       ),
     );
   }
@@ -271,7 +271,7 @@ class _SchoolTile extends StatelessWidget {
           child: Row(
             children: [
               CircleAvatar(
-                backgroundColor: const Color(0xff3174f1),
+                backgroundColor: const Color(0xffc93c7d),
                 foregroundColor: Colors.white,
                 child: Text(school.shortName),
               ),
@@ -292,7 +292,7 @@ class _SchoolTile extends StatelessWidget {
                       school.supportsAcademicImport
                           ? AppStrings.academicImportConfigured
                           : AppStrings.academicImportNotYetConfigured,
-                      style: const TextStyle(color: Color(0xff808080)),
+                      style: const TextStyle(color: Color(0xff6b4f5a)),
                     ),
                   ],
                 ),
@@ -300,7 +300,7 @@ class _SchoolTile extends StatelessWidget {
               Icon(
                 selected ? Icons.check_circle : Icons.circle_outlined,
                 color: selected
-                    ? const Color(0xff3174f1)
+                    ? const Color(0xffc93c7d)
                     : const Color(0xffb0b0b0),
               ),
             ],

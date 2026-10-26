@@ -46,7 +46,7 @@ class CourseListCard extends StatelessWidget {
                 icon: Icon(
                   selected ? Icons.delete : Icons.delete_outline,
                   color: selected
-                      ? const Color(0xffff3f15)
+                      ? const Color(0xffb3304a)
                       : const Color(0xffb0b0b0),
                 ),
               ),
@@ -58,7 +58,7 @@ class CourseListCard extends StatelessWidget {
                 color: selected
                     ? const Color(0xfffff1ed)
                     : Theme.of(context).colorScheme.surface,
-                border: Border.all(color: const Color(0xffe2e8f0)),
+                border: Border.all(color: const Color(0xfff7d9e2)),
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: const [
                   BoxShadow(
@@ -96,7 +96,7 @@ class CourseListCard extends StatelessWidget {
                         PopupMenuButton<CourseItemMenu>(
                           icon: const Icon(
                             Icons.more_horiz,
-                            color: Color(0xff808080),
+                            color: Color(0xff6b4f5a),
                           ),
                           onSelected: (value) {
                             switch (value) {
@@ -164,12 +164,12 @@ class InfoLine extends StatelessWidget {
       padding: const EdgeInsets.only(top: 4),
       child: Row(
         children: [
-          Text(label, style: const TextStyle(color: Color(0xff808080))),
+          Text(label, style: const TextStyle(color: Color(0xff6b4f5a))),
           const SizedBox(width: 15),
           Expanded(
             child: Text(
               value.isEmpty ? AppStrings.notSet : value,
-              style: const TextStyle(color: Color(0xff808080)),
+              style: const TextStyle(color: Color(0xff6b4f5a)),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -218,7 +218,7 @@ class BatchDeleteBar extends StatelessWidget {
                   child: const Text(
                     AppStrings.confirmDelete,
                     style: TextStyle(
-                      color: Color(0xffff3f15),
+                      color: Color(0xffb3304a),
                       fontWeight: FontWeight.bold,
                     ),
                   ),

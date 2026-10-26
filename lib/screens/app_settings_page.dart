@@ -133,7 +133,7 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.black,
                       side: const BorderSide(
-                        color: Color(0xff3174f1),
+                        color: Color(0xffc93c7d),
                         width: 1.5,
                       ),
                       shape: RoundedRectangleBorder(
@@ -228,7 +228,7 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
               onPressed: () => Navigator.of(context).pop(false),
               child: const Text(
                 AppStrings.cancel,
-                style: TextStyle(color: Color(0xffff3f15)),
+                style: TextStyle(color: Color(0xffb3304a)),
               ),
             ),
             TextButton(
@@ -290,7 +290,7 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
               onPressed: () => Navigator.of(context).pop(true),
               child: const Text(
                 AppStrings.confirm,
-                style: TextStyle(color: Color(0xffff3f15)),
+                style: TextStyle(color: Color(0xffb3304a)),
               ),
             ),
           ],
@@ -325,7 +325,7 @@ class _SettingRow extends StatelessWidget {
     return Container(
       constraints: const BoxConstraints(minHeight: 60),
       decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xffeeeeee))),
+        border: Border(bottom: BorderSide(color: Color(0xfff7d9e2))),
       ),
       child: Row(
         children: [
@@ -349,7 +349,7 @@ class _SchoolSettingRow extends StatelessWidget {
     return Container(
       constraints: const BoxConstraints(minHeight: 68),
       decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xffeeeeee))),
+        border: Border(bottom: BorderSide(color: Color(0xfff7d9e2))),
       ),
       child: Row(
         children: [
@@ -366,7 +366,7 @@ class _SchoolSettingRow extends StatelessWidget {
             onPressed: onReselect,
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.black,
-              side: const BorderSide(color: Color(0xff3174f1), width: 1.5),
+              side: const BorderSide(color: Color(0xffc93c7d), width: 1.5),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -393,14 +393,14 @@ class _SchoolInfoText extends StatelessWidget {
       return const Text(
         AppStrings.noSchoolSelected,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(color: Color(0xff808080)),
+        style: TextStyle(color: Color(0xff6b4f5a)),
       );
     }
     if (schoolId == AppSettingsModel.unspecifiedSchoolId) {
       return const Text(
         AppStrings.otherImportMethods,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(color: Color(0xff808080)),
+        style: TextStyle(color: Color(0xff6b4f5a)),
       );
     }
     return FutureBuilder<School>(
@@ -415,7 +415,7 @@ class _SchoolInfoText extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.right,
-          style: const TextStyle(color: Color(0xff808080)),
+          style: const TextStyle(color: Color(0xff6b4f5a)),
         );
       },
     );

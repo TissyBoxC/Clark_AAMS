@@ -196,7 +196,7 @@ class _VersionPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xffe2e8f0)),
+        border: Border.all(color: const Color(0xfff7d9e2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

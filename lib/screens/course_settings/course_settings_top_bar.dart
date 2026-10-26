@@ -44,7 +44,7 @@ class CourseSettingsTopBar extends StatelessWidget {
       trailing: batchDeleteMode
           ? const SizedBox(width: 48)
           : PopupMenuButton<CourseSettingsMenuAction>(
-              icon: const Icon(Icons.more_horiz, color: Color(0xff808080)),
+              icon: const Icon(Icons.more_horiz, color: Color(0xff6b4f5a)),
               onSelected: (value) {
                 switch (value) {
                   case CourseSettingsMenuAction.importSchedule:

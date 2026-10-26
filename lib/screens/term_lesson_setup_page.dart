@@ -388,7 +388,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                             height: 44,
                             margin: const EdgeInsets.symmetric(horizontal: 18),
                             decoration: BoxDecoration(
-                              color: const Color(0xfff1eeff),
+                              color: const Color(0xfffff2f5),
                               borderRadius: BorderRadius.circular(18),
                               border: Border.all(
                                 color: const Color(0xffd8d0ff),
@@ -537,7 +537,7 @@ class _LessonTimeProfileButton extends StatelessWidget {
         ? AppStrings.generalLessonTimesDescription
         : AppStrings.lessonTimesDescription(_trimLeadingZero(start));
     return Material(
-      color: const Color(0xfff1eeff),
+      color: const Color(0xfffff2f5),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
