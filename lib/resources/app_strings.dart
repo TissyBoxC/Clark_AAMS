@@ -69,16 +69,16 @@ class AppStrings {
   static const newVersionAvailable = '发现新版本，可手动更新';
   static const alreadyLatestVersion = '当前已是最新版本';
   static const academicImportInitialStatus = '请在页面中登录教务系统';
-  static const academicImportLoadFailed = '页面加载失败，请检查网络后重试';
+  static const academicImportLoadFailed = '学校页没有打开成功。检查一下网络，或者稍后再试一次。';
   static String academicImportTitle(String schoolName) => '$schoolName 教务导入';
-  static const academicImportLoginDetected = '检测到登录成功，正在提交后端导入';
-  static const academicImportMissingCookie = '未读取到登录 Cookie，请重新登录';
+  static const academicImportLoginDetected = '登录成功了，正在把课表读进来';
+  static const academicImportMissingCookie = '这次没有读到你的登录状态，请重新登录学校页面。';
   static String academicImportFailed(Object error) => '导入失败：$error';
   static const appSettingsTitle = '应用设置';
   static const termFirstDayLabel = '第一周第一天';
   static const notSet = '未设置';
   static const lessonTimesLabel = '每节课时间';
-  static const notConfigured = '未配置';
+  static const notConfigured = '还没有填写';
   static const configured = '已配置';
   static const configure = '配置';
   static const maxWeeksLabel = '最大周数';
@@ -159,7 +159,7 @@ class AppStrings {
   static String pickupCodeImportFailed(Object error) => '取件码导入失败：$error';
   static const selectSchoolFirst = '请先选择学校';
   static String schoolConfigLoadFailed(Object error) => '学校配置加载失败：$error';
-  static const academicImportNotConfigured = '当前学校未配置教务系统导入方法';
+  static const academicImportNotConfigured = '这所学校还不能一键导入，可以改用截图识别课表。';
   static const selectFirstWeekFirstDayTitle = '选择第一周第一天';
   static const importTermSetupSubtitle =
       '课程导入完成后，请先设置学期开始日期；下方节次时间通过上下滑动选择，也可以暂不配置。';
@@ -247,12 +247,12 @@ class AppStrings {
   static const searchSchoolHint = '搜索学校';
   static const clearSearch = '清空搜索';
   static String schoolListLoadFailed(Object error) => '学校列表加载失败：$error';
-  static const noSchoolsFromBackend = '后端未返回可用学校';
+  static const noSchoolsFromBackend = '现在没有可以一键导入的学校，可以改用截图识别课表。';
   static const enterCourseImport = '进入课程导入';
   static const useOtherImportMethods = '不选学校，用图片导入';
   static const noMatchedSchool = '没有找到这个学校。换个名称或简称再搜一次，也可以直接用图片导入课表。';
   static const academicImportConfigured = '已配置教务系统导入';
-  static const academicImportNotYetConfigured = '暂未配置教务系统导入';
+  static const academicImportNotYetConfigured = '这所学校的导入还没有接上，可以先用截图识别课表。';
   static const setupTermAndLessonTimeTitle = '设置学期与上课时间';
   static const setupTermAndLessonTimeSubtitle = '先选择第一周第一天，再按需配置每节课开始时间';
   static const saveConfig = '保存配置';
@@ -315,7 +315,7 @@ class AppStrings {
   ];
   static const widgetSyncFailed = '数据同步失败';
   static const widgetNoCoursesToday = '今天没有课';
-  static const widgetTimeNotConfigured = '时间未配置';
+  static const widgetTimeNotConfigured = '还没有设置上课时间';
   static const widgetStarted = '已开始';
   static String widgetRemaining(String duration) => '剩余 $duration';
   static const unnamedCourse = '未命名课程';
