@@ -211,7 +211,7 @@ class _VersionPanel extends StatelessWidget {
           Text(
             error == null ? _statusText() : AppStrings.checkFailed(error!),
             style: TextStyle(
-              color: error == null ? const Color(0xff64748b) : Colors.red,
+              color: error == null ? const Color(0xff6b4f5a) : Colors.red,
             ),
           ),
           const SizedBox(height: 12),
@@ -282,7 +282,7 @@ class _AboutRow extends StatelessWidget {
             child: Text(
               label,
               style: const TextStyle(
-                color: Color(0xff64748b),
+                color: Color(0xff6b4f5a),
                 fontWeight: FontWeight.w600,
               ),
             ),

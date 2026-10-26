@@ -101,7 +101,7 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
                                   .where((time) => time.isNotEmpty)
                                   .isEmpty
                               ? const Color(0xff9a92aa)
-                              : const Color(0xff6d64ff),
+                              : const Color(0xffc93c7d),
                           fontWeight: FontWeight.w800,
                         ),
                       ),

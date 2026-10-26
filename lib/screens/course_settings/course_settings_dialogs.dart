@@ -195,7 +195,7 @@ class ImportedCourseColorsDialogState
                             ),
                             Text(
                               ScheduleUtils.dayLabels[course.dayOfWeek - 1],
-                              style: const TextStyle(color: Color(0xff64748b)),
+                              style: const TextStyle(color: Color(0xff6b4f5a)),
                             ),
                           ],
                         ),

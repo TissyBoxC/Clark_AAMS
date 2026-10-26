@@ -43,7 +43,7 @@ class MineTab extends StatelessWidget {
                 icon: Icons.widgets_outlined,
                 title: AppStrings.homeWidgetTitle,
                 subtitle: AppStrings.homeWidgetSubtitle,
-                color: const Color(0xff6d64ff),
+                color: const Color(0xffc93c7d),
                 onTap: _pinHomeWidget,
               ),
               MineActionTile(

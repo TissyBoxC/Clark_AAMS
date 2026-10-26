@@ -57,13 +57,24 @@ void main() {
 
     test('取件码功能域常量', () {
       expect(AppStrings.enterEightDigitPickupCode, isNotEmpty);
-      expect(AppStrings.pickupCodeFetchFailed(404), contains('404'));
+      // 文案里不能出现状态码，也不该出现「HTTP」这类实现细节
+      expect(AppStrings.pickupCodeFetchFailed(404), isNot(contains('404')));
+      expect(AppStrings.pickupCodeFetchFailed(404), isNot(contains('HTTP')));
     });
   });
 
-  group('带参数的常量方法签名保持', () {
-    test('pickupCodeFetchFailed 接受状态码并拼进文案', () {
-      expect(AppStrings.pickupCodeFetchFailed(500), contains('500'));
+  group('错误文案不暴露实现细节', () {
+    // 界面文案只说明发生了什么、下一步做什么；状态码留给日志。
+    test('取件码失败文案不含状态码', () {
+      final message = AppStrings.pickupCodeFetchFailed(500);
+      expect(message, isNot(contains('500')));
+      expect(message, isNotEmpty);
+    });
+
+    test('请求失败文案不含状态码与 HTTP 字样', () {
+      final message = AppStrings.backendRequestFailed(500);
+      expect(message, isNot(contains('500')));
+      expect(message, isNot(contains('HTTP')));
     });
   });
 }

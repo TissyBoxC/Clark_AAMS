@@ -110,7 +110,7 @@ class ScheduleHeaderCard extends StatelessWidget {
             width: 126,
             padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
-              color: const Color(0xfff2efff),
+              color: const Color(0xfffff2f5),
               borderRadius: BorderRadius.circular(99),
               border: Border.all(color: homeLine),
             ),
@@ -272,7 +272,7 @@ class ScheduleTable extends StatelessWidget {
                       horizontal: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xfff2efff),
+                      color: const Color(0xfffff2f5),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: homeLine),
                     ),

@@ -167,7 +167,7 @@ class _AuthForm extends StatelessWidget {
           const Text(
             AppStrings.loginOptionalDescription,
             style: TextStyle(
-              color: Color(0xff81799f),
+              color: Color(0xff6b4f5a),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -312,7 +312,7 @@ class _UserPanel extends StatelessWidget {
         Text(
           user.email,
           style: const TextStyle(
-            color: Color(0xff81799f),
+            color: Color(0xff6b4f5a),
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -375,7 +375,7 @@ class _AccountLine extends StatelessWidget {
             child: Text(
               label,
               style: const TextStyle(
-                color: Color(0xff81799f),
+                color: Color(0xff6b4f5a),
                 fontWeight: FontWeight.w700,
               ),
             ),

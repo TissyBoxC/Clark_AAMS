@@ -63,7 +63,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xfffffbff),
+      backgroundColor: const Color(0xfffff9fa),
       body: Column(
         children: [
           TopBar(
@@ -81,7 +81,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                   widget.title,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    color: Color(0xff1f1b2d),
+                    color: Color(0xff4a2e3b),
                     fontSize: 28,
                     fontWeight: FontWeight.w900,
                     height: 1.18,
@@ -92,7 +92,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                   widget.subtitle,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    color: Color(0xff8a8498),
+                    color: Color(0xff6b4f5a),
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     height: 1.35,
@@ -111,7 +111,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                         ),
                         child: const Icon(
                           Icons.event_rounded,
-                          color: Color(0xff6d64ff),
+                          color: Color(0xffc93c7d),
                         ),
                       ),
                       const SizedBox(width: 14),
@@ -122,7 +122,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                             const Text(
                               AppStrings.termFirstDayLabel,
                               style: TextStyle(
-                                color: Color(0xff1f1b2d),
+                                color: Color(0xff4a2e3b),
                                 fontSize: 16,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -131,7 +131,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                             Text(
                               ScheduleUtils.localDateLabel(_termStartDate),
                               style: const TextStyle(
-                                color: Color(0xff8a8498),
+                                color: Color(0xff6b4f5a),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -153,7 +153,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                       const Text(
                         AppStrings.lessonStartTimesLabel,
                         style: TextStyle(
-                          color: Color(0xff1f1b2d),
+                          color: Color(0xff4a2e3b),
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
                         ),
@@ -163,7 +163,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                         Text(
                           widget.lessonTimeNotice,
                           style: const TextStyle(
-                            color: Color(0xff6d64ff),
+                            color: Color(0xffc93c7d),
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
                             height: 1.35,
@@ -174,7 +174,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                       const Text(
                         AppStrings.lessonStartTimesHelp,
                         style: TextStyle(
-                          color: Color(0xff8a8498),
+                          color: Color(0xff6b4f5a),
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           height: 1.35,
@@ -215,7 +215,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                                           index + 1,
                                         ),
                                         style: const TextStyle(
-                                          color: Color(0xff1f1b2d),
+                                          color: Color(0xff4a2e3b),
                                           fontWeight: FontWeight.w800,
                                         ),
                                       ),
@@ -229,7 +229,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                                         style: TextStyle(
                                           color: _startTimes[index].isEmpty
                                               ? const Color(0xffaaa4b8)
-                                              : const Color(0xff1f1b2d),
+                                              : const Color(0xff4a2e3b),
                                           fontSize: 16,
                                           fontWeight: FontWeight.w900,
                                         ),
@@ -238,7 +238,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                                     const SizedBox(width: 8),
                                     const Icon(
                                       Icons.unfold_more_rounded,
-                                      color: Color(0xff8a8498),
+                                      color: Color(0xff6b4f5a),
                                       size: 20,
                                     ),
                                   ],
@@ -357,7 +357,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                           Text(
                             AppStrings.selectLessonStartTime(lessonIndex + 1),
                             style: const TextStyle(
-                              color: Color(0xff1f1b2d),
+                              color: Color(0xff4a2e3b),
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
                             ),
@@ -449,7 +449,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                               child: Text(
                                 AppStrings.period,
                                 style: TextStyle(
-                                  color: Color(0xff8a8498),
+                                  color: Color(0xff6b4f5a),
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -460,7 +460,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                               child: Text(
                                 AppStrings.hour,
                                 style: TextStyle(
-                                  color: Color(0xff8a8498),
+                                  color: Color(0xff6b4f5a),
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -471,7 +471,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                               child: Text(
                                 AppStrings.minute,
                                 style: TextStyle(
-                                  color: Color(0xff8a8498),
+                                  color: Color(0xff6b4f5a),
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -546,7 +546,7 @@ class _LessonTimeProfileButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
             children: [
-              const Icon(Icons.download_done_rounded, color: Color(0xff6d64ff)),
+              const Icon(Icons.download_done_rounded, color: Color(0xffc93c7d)),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -555,7 +555,7 @@ class _LessonTimeProfileButton extends StatelessWidget {
                     Text(
                       title,
                       style: const TextStyle(
-                        color: Color(0xff1f1b2d),
+                        color: Color(0xff4a2e3b),
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -563,7 +563,7 @@ class _LessonTimeProfileButton extends StatelessWidget {
                     Text(
                       subtitle,
                       style: const TextStyle(
-                        color: Color(0xff8a8498),
+                        color: Color(0xff6b4f5a),
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                       ),
@@ -571,7 +571,7 @@ class _LessonTimeProfileButton extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xff8a8498)),
+              const Icon(Icons.chevron_right_rounded, color: Color(0xff6b4f5a)),
             ],
           ),
         ),
@@ -630,7 +630,7 @@ class _WheelColumn extends StatelessWidget {
               labelFor(index),
               style: TextStyle(
                 color: selected
-                    ? const Color(0xff6d64ff)
+                    ? const Color(0xffc93c7d)
                     : const Color(0xffb0aabd),
                 fontSize: selected ? 24 : 19,
                 fontWeight: selected ? FontWeight.w900 : FontWeight.w600,

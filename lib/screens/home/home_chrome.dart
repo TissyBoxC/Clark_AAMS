@@ -112,7 +112,7 @@ class _NavArtButton extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             color: selected
-                ? const Color(0xfff2efff)
+                ? const Color(0xfffff2f5)
                 : Colors.white.withAlpha(0),
           ),
           child: Column(
