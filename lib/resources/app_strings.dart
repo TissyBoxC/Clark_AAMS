@@ -241,14 +241,14 @@ class AppStrings {
   static String monthText(int month) => '$month月';
   static const locationNotSet = '未设置地点';
   static const chooseSchoolTitle = '选择学校';
-  static const chooseSchoolSubtitle = '请选择当前使用的教务系统，学校列表由后端实时提供。';
+  static const chooseSchoolSubtitle = '选你正在用的学校，选好之后就能把课表读进来。';
   static const searchSchoolHint = '搜索学校';
   static const clearSearch = '清空搜索';
   static String schoolListLoadFailed(Object error) => '学校列表加载失败：$error';
   static const noSchoolsFromBackend = '后端未返回可用学校';
   static const enterCourseImport = '进入课程导入';
-  static const useOtherImportMethods = '使用其他方式导入';
-  static const noMatchedSchool = '未找到匹配学校';
+  static const useOtherImportMethods = '不选学校，用图片导入';
+  static const noMatchedSchool = '没有找到这个学校。换个名称或简称再搜一次，也可以直接用图片导入课表。';
   static const academicImportConfigured = '已配置教务系统导入';
   static const academicImportNotYetConfigured = '暂未配置教务系统导入';
   static const setupTermAndLessonTimeTitle = '设置学期与上课时间';
