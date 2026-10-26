@@ -141,7 +141,7 @@ class AppStrings {
   static const confirmDelete = '确定删除';
   static String coursesAdded(int count) => '成功添加 $count 门课程';
   static const schoolImportRequiresSupportedSchool = '需先选择支持教务系统导入的学校';
-  static const importByOcr = '使用OCR导入';
+  static const importByOcr = '用图片导入';
   static const importByOcrSubtitle = '识别课表图片后导入课程';
   static const importByPickupCode = '使用取件码导入';
   static const importByPickupCodeSubtitle = '输入取件码获取课程数据';
@@ -149,7 +149,7 @@ class AppStrings {
   static const recognizingCourseImage = '正在上传图片并识别，请稍候';
   static const noCoursesRecognized = '未识别到课程';
   static String coursesImported(int count) => '成功导入 $count 门课程';
-  static String ocrImportFailed(Object error) => 'OCR导入失败：$error';
+  static String ocrImportFailed(Object error) => '图片没有识别成功，请换一张更清楚的课表截图再试。';
   static const recognitionCompleted = '识别完成';
   static String pickupCodeLabel(String code) => '取件码：$code';
   static const copyPickupCode = '复制取件码';
@@ -172,9 +172,9 @@ class AppStrings {
   static const courseLocationLabel = '课程地点';
   static const selectAll = '全选';
   static const batchAddCoursesTitle = '批量添加课程';
-  static const courseJsonHint = '粘贴课程 JSON 数组';
+  static const courseJsonHint = '粘贴课程文本';
   static const help = '使用说明';
-  static const exportJson = '导出JSON';
+  static const exportJson = '导出课程';
   static const copiedToClipboard = '已复制到剪贴板';
   static const batchAddHelpTitle = '批量添加说明';
   static const batchAddHelpExample =
@@ -189,7 +189,7 @@ class AppStrings {
       '    "location": "A101"\n'
       '  }\n'
       ']';
-  static const invalidJsonInput = '输入的JSON格式错误';
+  static const invalidJsonInput = '这段内容的格式对不上，请检查后再试。';
   static String selectColorForCourse(String name) => '选择颜色：$name';
   static const setCourseColor = '设置课程颜色';
   static String selectedCourseLabel(String name) => '当前：$name';
