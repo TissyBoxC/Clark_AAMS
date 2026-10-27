@@ -48,7 +48,7 @@ class AppStrings {
   static const startWeekAfterEndWeek = '起始周不能大于结束周';
   static const startLessonAfterEndLesson = '起始节次不能晚于结束节次';
   static const aboutTitle = '关于';
-  static const appDescription = '一个用于查看、导入、维护本学期课程安排的本地课表应用。';
+  static const appDescription = '把本学期的课表收在一处：看今天上什么，也能从教务系统或截图导进来。';
   static const authorLabel = '作者';
   static const licenseLabel = '开源协议';
   static const gplLicense = 'GPL 许可证';
@@ -61,12 +61,16 @@ class AppStrings {
   static const versionInfo = '版本信息';
   static const currentVersion = '当前版本';
   static const latestVersion = '最新版本';
-  static String checkFailed(Object error) => '检查失败：$error';
+  /// 更新检查失败时的提示。
+  ///
+  /// 刻意**不**把 error 拼进来：用户看到「SocketException: Failed host lookup」
+  /// 只会更困惑。参数保留是为了不动调用方签名。
+  static String checkFailed(Object error) => '没能检查更新。看看网络是否正常，稍后再试一次。';
   static const checkUpdate = '检查更新';
   static const manualUpdate = '手动更新';
   static const checkingLatestVersion = '正在检查最新版本';
   static const noLatestVersion = '尚未获取最新版本';
-  static const currentVersionTooLow = '当前版本低于最低可用版本，需要更新';
+  static const currentVersionTooLow = '这个版本太旧了，已经不能继续用，请更新到新版本。';
   static const newVersionAvailable = '发现新版本，可手动更新';
   static const alreadyLatestVersion = '当前已是最新版本';
   static const academicImportInitialStatus = '请在页面中登录教务系统';
@@ -74,7 +78,7 @@ class AppStrings {
   static String academicImportTitle(String schoolName) => '$schoolName 教务导入';
   static const academicImportLoginDetected = '登录成功了，正在把课表读进来';
   static const academicImportMissingCookie = '这次没有读到你的登录状态，请重新登录学校页面。';
-  static String academicImportFailed(Object error) => '导入失败：$error';
+  static String academicImportFailed(Object error) => '这次导入没有成功。检查一下网络，或者换用图片导入再试。';
   static const appSettingsTitle = '应用设置';
   static const termFirstDayLabel = '第一周第一天';
   static const notSet = '未设置';
@@ -105,9 +109,9 @@ class AppStrings {
   static const otherImportMethods = '其他方式导入';
   static const accountTitle = '账号';
   static const loggedIn = '已登录';
-  static String requestFailed(Object error) => '请求失败：$error';
+  static String requestFailed(Object error) => '这一步没有完成。看看网络是否正常，再试一次。';
   static const loggedOut = '已退出登录';
-  static String logoutFailed(Object error) => '退出登录失败：$error';
+  static String logoutFailed(Object error) => '没能退出登录。再点一次试试，如果还是不行，可以重启应用。';
   static const loginForChaoxing = '登录后可使用学习通作业辅助';
   static const loginOptionalDescription = '课表、桌面小组件等功能仍可不登录使用。';
   static const emailLogin = '邮箱登录';
@@ -132,7 +136,11 @@ class AppStrings {
   static const importCourses = '导入课程';
   static const batchAdd = '批量添加';
   static const batchDelete = '批量删除';
-  static const chooseImportFromTopRight = '点击右上角选择导入课程';
+  // 空课表：说清为什么空、下一步能做什么，而不是只给一句导航指令
+  static const emptyScheduleTitle = '还没有课程';
+  static const emptyScheduleCopy = '可以先用图片导入，或者手动添加一节课。';
+  static const emptyScheduleImport = '导入课表';
+  static const emptyScheduleAddManually = '手动添加';
   static const deleteCourseTitle = '删除课程';
   static String deleteCourseMessage(String name) => '确定要删除“$name”吗？此操作不可撤销。';
   static const delete = '删除';
@@ -157,9 +165,9 @@ class AppStrings {
   static const continueImport = '继续导入';
   static const fetchingCourses = '正在获取课程，请稍候';
   static const pickupCodeNoCourses = '取件码没有对应课程';
-  static String pickupCodeImportFailed(Object error) => '取件码导入失败：$error';
+  static String pickupCodeImportFailed(Object error) => '这个取件码没能读出来。确认一下是不是完整的 8 位，再试一次。';
   static const selectSchoolFirst = '请先选择学校';
-  static String schoolConfigLoadFailed(Object error) => '学校配置加载失败：$error';
+  static String schoolConfigLoadFailed(Object error) => '学校列表没有读到。稍后再打开这一页试试。';
   static const academicImportNotConfigured = '这所学校还不能一键导入，可以改用截图识别课表。';
   static const selectFirstWeekFirstDayTitle = '选择第一周第一天';
   static const importTermSetupSubtitle =
@@ -228,10 +236,10 @@ class AppStrings {
   static const homeWidgetTitle = '桌面小组件';
   static const homeWidgetSubtitle = '查看不同系统的添加方式';
   static const chaoxingHomeworkTitle = '学习通作业辅助';
-  static const chaoxingHomeworkSubtitle = '需登录后使用自动化处理作业流程';
+  static const chaoxingHomeworkSubtitle = '登录学习通后，可以在这里做题和看解析';
   static const courseSettingsSubtitle = '导入、编辑和导出课程';
   static const appSettingsSubtitle = '提醒时间、节次和偏好设置';
-  static const aboutSubtitle = '版本信息与项目说明';
+  static const aboutSubtitle = '看看当前版本和这个项目的由来';
   static const addWidgetTitle = '添加小组件';
   static const addWidgetManualMessage = '不同系统添加小组件方式不同，请前往用户手册查看符合你系统的添加方式。';
   static const close = '关闭';
@@ -247,7 +255,7 @@ class AppStrings {
   static const chooseSchoolSubtitle = '选你正在用的学校，选好之后就能把课表读进来。';
   static const searchSchoolHint = '搜索学校';
   static const clearSearch = '清空搜索';
-  static String schoolListLoadFailed(Object error) => '学校列表加载失败：$error';
+  static String schoolListLoadFailed(Object error) => '学校列表没有读到，可能是网络不太稳。稍后再打开这一页试试。';
   static const noSchoolsFromBackend = '现在没有可以一键导入的学校，可以改用截图识别课表。';
   static const enterCourseImport = '进入课程导入';
   static const useOtherImportMethods = '不选学校，用图片导入';
@@ -345,7 +353,7 @@ class AppStrings {
   static const chaoxingInitialStatus = '请先登录学习通，并手动进入作业题目页面。';
   static const chaoxingPageLoading = '页面加载中';
   static const chaoxingEnterHomeworkPage = '请进入作业页面后点击开始答题';
-  static String chaoxingPageLoadFailed(String error) => '页面加载失败：$error';
+  static String chaoxingPageLoadFailed(String error) => '学习通页面没有打开成功。回到上一页重新进一次。';
   static const chaoxingReload = '重新加载';
   static const chaoxingBackHome = '回到学习通首页';
   static const chaoxingLoginRequired = '还没有登录学习通。登录之后就能用做题辅助了。';
@@ -362,7 +370,7 @@ class AppStrings {
       '已停止，成功 $success 题，失败 $failed 题';
   static String chaoxingCompleted(int success, int failed) =>
       '答题完成，成功 $success 题，失败 $failed 题';
-  static String chaoxingAutomationError(Object error) => '自动化异常：$error';
+  static String chaoxingAutomationError(Object error) => '这一步没有做完。可以重新开始，或者手动完成。';
   static const chaoxingStopping = '正在停止，当前题处理完后结束';
   static String chaoxingCollapsedProgress(int current, int total) =>
       '答题中 $current/$total';

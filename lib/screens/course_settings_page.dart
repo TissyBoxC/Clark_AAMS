@@ -56,11 +56,9 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
               ),
               Expanded(
                 child: courses.isEmpty
-                    ? const Center(
-                        child: Text(
-                          AppStrings.chooseImportFromTopRight,
-                          style: TextStyle(color: Color(0xff6b4f5a)),
-                        ),
+                    ? _EmptySchedule(
+                        onImport: _showImportMethodSheet,
+                        onAddManually: _showBatchAddDialog,
                       )
                     : ListView.builder(
                         padding: EdgeInsets.fromLTRB(
@@ -645,3 +643,52 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
 
 
 enum _ImportMethod { ocr, pickupCode, academic }
+
+/// 空课表状态。
+///
+/// 原来只显示一句「点击右上角选择导入课程」——那是指路，不是解释：
+/// 用户看不出课表是空的还是没加载出来，也没有可以点的地方。
+class _EmptySchedule extends StatelessWidget {
+  const _EmptySchedule({required this.onImport, required this.onAddManually});
+
+  final VoidCallback onImport;
+  final VoidCallback onAddManually;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              AppStrings.emptyScheduleTitle,
+              style: const TextStyle(
+                color: Color(0xff4a2e3b),
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              AppStrings.emptyScheduleCopy,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Color(0xff6b4f5a), height: 1.6),
+            ),
+            const SizedBox(height: 18),
+            FilledButton(
+              onPressed: onImport,
+              child: const Text(AppStrings.emptyScheduleImport),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: onAddManually,
+              child: const Text(AppStrings.emptyScheduleAddManually),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
