@@ -37,7 +37,7 @@ class TopBar extends StatelessWidget {
                 Text(
                   title,
                   style: const TextStyle(
-                    color: Color(0xff2b2545),
+                    color: Color(0xff4a2e3b),
                     fontSize: 21,
                     fontWeight: FontWeight.w900,
                   ),

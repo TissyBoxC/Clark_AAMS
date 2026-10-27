@@ -47,7 +47,7 @@ class CourseListCard extends StatelessWidget {
                   selected ? Icons.delete : Icons.delete_outline,
                   color: selected
                       ? const Color(0xffb3304a)
-                      : const Color(0xffb0b0b0),
+                      : const Color(0xff6b4f5a),
                 ),
               ),
             ),
@@ -56,7 +56,7 @@ class CourseListCard extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: selected
-                    ? const Color(0xfffff1ed)
+                    ? const Color(0xffffe9ef)
                     : Theme.of(context).colorScheme.surface,
                 border: Border.all(color: const Color(0xfff7d9e2)),
                 borderRadius: BorderRadius.circular(10),

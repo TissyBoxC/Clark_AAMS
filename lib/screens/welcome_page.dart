@@ -301,7 +301,7 @@ class _SchoolTile extends StatelessWidget {
                 selected ? Icons.check_circle : Icons.circle_outlined,
                 color: selected
                     ? const Color(0xffc93c7d)
-                    : const Color(0xffb0b0b0),
+                    : const Color(0xff6b4f5a),
               ),
             ],
           ),

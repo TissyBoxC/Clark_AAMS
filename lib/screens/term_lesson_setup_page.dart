@@ -391,7 +391,7 @@ class _TermLessonSetupPageState extends State<TermLessonSetupPage> {
                               color: const Color(0xfffff2f5),
                               borderRadius: BorderRadius.circular(18),
                               border: Border.all(
-                                color: const Color(0xffd8d0ff),
+                                color: const Color(0xfff7d9e2),
                               ),
                             ),
                           ),

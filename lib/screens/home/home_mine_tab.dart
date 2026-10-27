@@ -64,7 +64,7 @@ class MineTab extends StatelessWidget {
                 icon: Icons.settings_outlined,
                 title: AppStrings.appSettingsTitle,
                 subtitle: AppStrings.appSettingsSubtitle,
-                color: Color(0xff5bb6ff),
+                color: Color(0xff66ccff),
                 page: AppSettingsPage(),
               ),
               const MineActionTile(
