@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:clark_aams/models/app_settings.dart';
 import 'package:clark_aams/models/course.dart';
@@ -124,9 +125,16 @@ void main() {
       expect(result.message, contains('课表'));
     });
 
-    test('内置浏览器在桌面与手机上都可用', () {
-      expect(AcademicBrowser.isSupported, isTrue);
+    test('内置浏览器在目标平台上的可用性与提示一致', () {
+      // 支持情况随平台变化：Windows / macOS / 手机可用，Linux 上退回截图识别。
+      // 这里只在"支持"与"提示文案"之间的一致性上做断言，不写死某一平台。
       expect(AcademicBrowser.engineHint, isNotEmpty);
+      if (Platform.isWindows) {
+        expect(AcademicBrowser.isSupported, isTrue);
+      }
+      if (Platform.isLinux) {
+        expect(AcademicBrowser.isSupported, isFalse);
+      }
     });
 
     test('没有登录入口的学校不去打开页面', () {

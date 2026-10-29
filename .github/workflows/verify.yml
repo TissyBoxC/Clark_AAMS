@@ -29,7 +29,7 @@ jobs:
       - name: 准备 Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.41.9'
+          flutter-version: '3.47.8'
           channel: stable
           cache: true
 
@@ -43,7 +43,7 @@ jobs:
         run: flutter test test/workspace_smoke_test.dart test/course_importer_test.dart test/course_week_pattern_test.dart
 
   # ---------------------------------------------------------------
-  # Windows 桌面端：本机缺 Visual Studio，靠这里验证真实构建
+  # Windows 桌面端：本机无法构建时的兜底验证
   # ---------------------------------------------------------------
   windows:
     name: Windows 桌面端
@@ -55,9 +55,13 @@ jobs:
       - name: 准备 Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.41.9'
+          flutter-version: '3.47.8'
           channel: stable
           cache: true
+
+      # 内置浏览器插件用它拉取 WebView2 与 WIL，缺了会直接构建失败。
+      - name: 准备 NuGet
+        uses: NuGet/setup-nuget@v2
 
       - name: 安装依赖
         run: flutter pub get
@@ -101,7 +105,7 @@ jobs:
       - name: 准备 Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.41.9'
+          flutter-version: '3.47.8'
           channel: stable
           cache: true
 
@@ -130,7 +134,7 @@ jobs:
       - name: 准备 Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.41.9'
+          flutter-version: '3.47.8'
           channel: stable
           cache: true
 

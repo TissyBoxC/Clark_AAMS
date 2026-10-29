@@ -31,7 +31,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.41.9'
+          flutter-version: '3.47.8'
           channel: stable
           cache: true
 
@@ -184,7 +184,7 @@ jobs:
 
             - 版本：${{ steps.version.outputs.name }}（build ${{ steps.version.outputs.code }}）
             - 提交：${{ github.sha }}
-            - 构建：GitHub Actions，Flutter 3.41.9 / JDK 21 / AGP 8.11.1
+            - 构建：GitHub Actions，Flutter 3.47.8 / JDK 21 / AGP 8.11.1
 
             `universal` 包含全部 ABI，安装包较大；`arm64-v8a` / `armeabi-v7a` / `x86_64`
             为按架构拆分的小体积包。安装任一即可。

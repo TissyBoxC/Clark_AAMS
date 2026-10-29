@@ -32,6 +32,17 @@ set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE}")
 # Use Unicode for all projects.
 add_definitions(-DUNICODE -D_UNICODE)
 
+# 内置浏览器插件依赖的 WIL 头文件仍在用 <experimental/coroutine>，
+# 新版 VC 工具链会把它当成错误拦下。这个宏是微软给出的正式开关；
+# 放在目录级，插件自己的编译单元也能生效。
+add_compile_definitions(
+  _SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+
+# 窗口标题等源码里有中文，统一按 UTF-8 读取，否则会被按本地代码页解析成乱码。
+if(MSVC)
+  add_compile_options("/utf-8")
+endif()
+
 # Compilation settings that should be applied to most targets.
 #
 # Be cautious about adding new options here, as plugins use this function by
