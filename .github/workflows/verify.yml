@@ -22,9 +22,6 @@ jobs:
   analyze:
     name: 分析与测试
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: Clark_AAMS
     steps:
       - name: 拉取代码
         uses: actions/checkout@v4
@@ -43,7 +40,7 @@ jobs:
         run: flutter analyze
 
       - name: 单元测试
-        run: flutter test test/workspace_smoke_test.dart
+        run: flutter test test/workspace_smoke_test.dart test/course_importer_test.dart test/course_week_pattern_test.dart
 
   # ---------------------------------------------------------------
   # Windows 桌面端：本机缺 Visual Studio，靠这里验证真实构建
@@ -51,9 +48,6 @@ jobs:
   windows:
     name: Windows 桌面端
     runs-on: windows-latest
-    defaults:
-      run:
-        working-directory: Clark_AAMS
     steps:
       - name: 拉取代码
         uses: actions/checkout@v4
@@ -91,7 +85,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-release
-          path: Clark_AAMS/build/windows/x64/runner/Release/
+          path: build/windows/x64/runner/Release/
           retention-days: 7
 
   # ---------------------------------------------------------------
@@ -100,9 +94,6 @@ jobs:
   macos:
     name: macOS 桌面端
     runs-on: macos-latest
-    defaults:
-      run:
-        working-directory: Clark_AAMS
     steps:
       - name: 拉取代码
         uses: actions/checkout@v4
@@ -126,9 +117,6 @@ jobs:
   android:
     name: Android 安装包
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: Clark_AAMS
     steps:
       - name: 拉取代码
         uses: actions/checkout@v4
@@ -156,31 +144,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-debug-apk
-          path: Clark_AAMS/build/app/outputs/flutter-apk/app-debug.apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 7
-
-  # ---------------------------------------------------------------
-  # Web 端：类型检查 + 构建 + 文案规范
-  # ---------------------------------------------------------------
-  web:
-    name: Web 端
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: Clark_AAMS_Frontend
-    steps:
-      - name: 拉取代码
-        uses: actions/checkout@v4
-
-      - name: 准备 Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: Clark_AAMS_Frontend/package-lock.json
-
-      - name: 安装依赖
-        run: npm ci
-
-      - name: 类型检查与构建
-        run: npm run build
