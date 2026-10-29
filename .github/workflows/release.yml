@@ -14,8 +14,8 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    name: Build APK
+  android:
+    name: Android 安装包
     runs-on: ubuntu-latest
 
     steps:
@@ -189,3 +189,135 @@ jobs:
             `universal` 包含全部 ABI，安装包较大；`arm64-v8a` / `armeabi-v7a` / `x86_64`
             为按架构拆分的小体积包。安装任一即可。
           files: out/*.apk
+
+  # ---------------------------------------------------------------
+  # Windows 桌面安装包：在 Windows 机器上打出单个 exe，与 Android 并行，
+  # 一起挂到同一个 Release 上。
+  # ---------------------------------------------------------------
+  windows:
+    name: Windows 安装包
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.8'
+          channel: stable
+          cache: true
+
+      # 内置浏览器插件靠 nuget 拉 WebView2 与 WIL。
+      - name: Set up NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Read version from pubspec
+        id: version
+        shell: pwsh
+        run: |
+          $line = Select-String -Path pubspec.yaml -Pattern '^version:' | Select-Object -First 1
+          $value = ($line.Line -replace '^version:\s*', '').Trim()
+          $parts = $value.Split('+')
+          $name = $parts[0]
+          $code = if ($parts.Count -gt 1) { $parts[1] } else { '1' }
+          "name=$name" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "code=$code" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "pubspec version: $value"
+
+      - name: Resolve tag name
+        id: tag
+        shell: pwsh
+        run: |
+          $input = "${{ github.event.inputs.version }}"
+          if ($input) {
+            $tag = $input
+          } elseif ($env:GITHUB_REF -like 'refs/tags/*') {
+            $tag = $env:GITHUB_REF -replace '^refs/tags/', ''
+          } else {
+            $tag = "v${{ steps.version.outputs.name }}+${{ steps.version.outputs.code }}"
+          }
+          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "tag: $tag"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build desktop app
+        run: flutter build windows --release
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { throw "找不到 Inno Setup 编译器：$iscc" }
+          & $iscc "/DAppVersion=${{ steps.version.outputs.name }}" "/DAppBuild=${{ steps.version.outputs.code }}" "windows\installer\clark_aams.iss"
+          if ($LASTEXITCODE -ne 0) { throw "安装包构建失败" }
+
+      - name: Collect artifacts
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.tag.outputs.tag }}"
+          New-Item -ItemType Directory -Force -Path out | Out-Null
+          $setup = Get-ChildItem out -Filter "Clark_AAMS_*_windows_x64.exe" | Select-Object -First 1
+          if (-not $setup) { throw "没有生成安装包" }
+          Rename-Item $setup.FullName "Clark_AAMS_${tag}_windows_x64_setup.exe"
+          # 免安装版：Release 目录压成 zip，解压就能用。
+          Compress-Archive -Path build\windows\x64\runner\Release\* `
+            -DestinationPath "out\Clark_AAMS_${tag}_windows_x64_portable.zip" -Force
+          Get-ChildItem out | Select-Object Name, Length | Format-Table -AutoSize
+
+      - name: Write checksums
+        shell: pwsh
+        run: |
+          Get-ChildItem out -File | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+            "$hash  $($_.Name)"
+          } | Set-Content -Encoding utf8 "out\SHA256SUMS-windows.txt"
+          Get-Content "out\SHA256SUMS-windows.txt"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: clark-aams-windows
+          path: |
+            out/*windows_x64_setup.exe
+            out/*windows_x64_portable.zip
+          retention-days: 30
+
+      - name: Upload SHA256SUMS
+        uses: actions/upload-artifact@v4
+        with:
+          name: clark-aams-windows-checksums
+          path: out/SHA256SUMS-windows.txt
+          retention-days: 30
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Clark AAMS ${{ steps.tag.outputs.tag }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            Clark AAMS 桌面版 ${{ steps.tag.outputs.tag }}
+
+            - 版本：${{ steps.version.outputs.name }}（build ${{ steps.version.outputs.code }}）
+            - 提交：${{ github.sha }}
+            - 构建：GitHub Actions，Flutter 3.47.8
+
+            `setup.exe` 是安装包，装完会在开始菜单和桌面留快捷方式；
+            `portable.zip` 解压就能用，不需要安装。
+
+            内置浏览器用的是 Windows 自带的 WebView2 内核，Windows 11 已自带；
+            Windows 10 如未安装会提示，按提示装一次即可。
+          files: |
+            out/*windows_x64_setup.exe
+            out/*windows_x64_portable.zip
+            out/SHA256SUMS-windows.txt

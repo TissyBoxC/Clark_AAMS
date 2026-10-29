@@ -56,3 +56,6 @@ app.*.map.json
 /ios/Flutter/Generated.xcconfig
 /ios/Flutter/flutter_export_environment.sh
 /ios/Flutter/ephemeral/
+
+# 本地构建出来的安装包与发布产物
+out/
