@@ -359,7 +359,7 @@ class WidgetService {
   }
 
   static String _dateHeaderText(DateTime date) {
-    return AppStrings.todayWithWeekday(date);
+    return AppStrings.todayWithWeekdayDate(date);
   }
 
   static String _weekHeaderText(AppSettingsModel settings, DateTime date) {

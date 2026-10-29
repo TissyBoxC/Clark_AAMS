@@ -36,8 +36,8 @@ class HomeTab extends StatelessWidget {
     final todayStatusText = store.courses.isEmpty
         ? AppStrings.noCoursesYet
         : allTodayCourses.isEmpty
-            ? AppStrings.noCoursesToday
-            : AppStrings.coursesFinishedToday;
+        ? AppStrings.noCoursesToday
+        : AppStrings.coursesFinishedToday;
 
     return Column(
       children: [

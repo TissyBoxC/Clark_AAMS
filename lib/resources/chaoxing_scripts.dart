@@ -16,7 +16,7 @@
 abstract final class ChaoxingScripts {
   const ChaoxingScripts._();
 
-static const chaoxingCollectQuestionsJs = r'''
+  static const chaoxingCollectQuestionsJs = r'''
 (() => {
 function clean(text) {
     return (text || '').replace(/\s+/g, ' ').trim();
@@ -260,8 +260,7 @@ return JSON.stringify(uniqueQuestions(collectQuestions(document, 0, 6)));
 })()
 ''';
 
-
-static const chaoxingAnswerJs = r'''
+  static const chaoxingAnswerJs = r'''
 const targetNumber = String(arguments[0]);
 const optionLetters = normalizeLetters(arguments[1]);
 const textAnswers = normalizeTextAnswers(arguments[2]);

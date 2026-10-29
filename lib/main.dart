@@ -1,119 +1,118 @@
-import 'dart:async';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import 'resources/app_colors.dart';
+import 'resources/app_metrics.dart';
 import 'resources/app_strings.dart';
-import 'screens/home_page.dart';
-import 'screens/welcome_page.dart';
-import 'services/auth_session.dart';
+import 'resources/app_theme.dart';
+import 'screens/workspace.dart';
 import 'services/class_schedule_store.dart';
 import 'services/schedule_scope.dart';
-import 'widget/widget_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final store = await ClassScheduleStore.load();
-  unawaited(WidgetService.updateWidget());
-  unawaited(AuthSession.instance.initialize());
-  runApp(ClassScheduleApp(store: store));
+
+  // 桌面端窗口允许自由缩放，先放开系统层面的方向限制。
+  if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+    await SystemChrome.setPreferredOrientations(const <DeviceOrientation>[]);
+  }
+
+  runApp(const ClarkApp());
 }
 
-class ClassScheduleApp extends StatelessWidget {
-  const ClassScheduleApp({super.key, required this.store});
+class ClarkApp extends StatefulWidget {
+  const ClarkApp({super.key});
 
-  final ClassScheduleStore store;
+  @override
+  State<ClarkApp> createState() => _ClarkAppState();
+}
+
+class _ClarkAppState extends State<ClarkApp> {
+  ClassScheduleStore? _store;
+
+  @override
+  void initState() {
+    super.initState();
+    _bootstrap();
+  }
+
+  /// 读取本地课表。读不出来就多试一次，失败也不让应用卡在启动页。
+  Future<void> _bootstrap() async {
+    ClassScheduleStore? store;
+    for (var attempt = 0; attempt < 2 && store == null; attempt++) {
+      try {
+        store = await ClassScheduleStore.load();
+      } catch (_) {
+        store = null;
+      }
+    }
+    if (!mounted) {
+      return;
+    }
+    setState(() => _store = store);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ScheduleScope(
-      store: store,
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: AppStrings.appName,
-        // 与网页端同一套粉白体系：最深只到深梅灰，不用纯黑；
-        // 主色用饱和糖果粉，因为浅粉 #F7A8BF 配白字对比度只有 1.86:1，看不清。
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xffc93c7d),
-            brightness: Brightness.light,
-          ).copyWith(
-            primary: const Color(0xffc93c7d),
-            onPrimary: Colors.white,
-            surface: const Color(0xffffffff),
-            onSurface: const Color(0xff4a2e3b),
-            secondary: const Color(0xffb23a68),
-            outline: const Color(0xfff0bdcb),
-          ),
-          useMaterial3: true,
-          scaffoldBackgroundColor: const Color(0xfffff9fa),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xfffff9fa),
-            foregroundColor: Color(0xff4a2e3b),
-            centerTitle: true,
-            elevation: 0,
-            surfaceTintColor: Colors.transparent,
-          ),
-          cardTheme: CardThemeData(
-            color: Colors.white,
-            elevation: 0,
-            surfaceTintColor: Colors.transparent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: const BorderSide(color: Color(0xfff7d9e2)),
-            ),
-          ),
-          filledButtonTheme: FilledButtonThemeData(
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xffc93c7d),
-              foregroundColor: Colors.white,
-              minimumSize: const Size(0, 48),
-              shape: const StadiumBorder(),
-            ),
-          ),
-          outlinedButtonTheme: OutlinedButtonThemeData(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xffb23a68),
-              side: const BorderSide(color: Color(0xfff0bdcb)),
-              minimumSize: const Size(0, 48),
-              shape: const StadiumBorder(),
-            ),
-          ),
-          textButtonTheme: TextButtonThemeData(
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xffc93c7d),
-            ),
-          ),
-          floatingActionButtonTheme: const FloatingActionButtonThemeData(
-            backgroundColor: Color(0xffc93c7d),
-            foregroundColor: Colors.white,
-          ),
-          inputDecorationTheme: InputDecorationTheme(
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xfff0bdcb)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xfff0bdcb)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xffc93c7d), width: 2),
-            ),
-          ),
-          dividerTheme: const DividerThemeData(color: Color(0xfff7d9e2)),
-          snackBarTheme: const SnackBarThemeData(
-            backgroundColor: Color(0xff4a2e3b),
-            contentTextStyle: TextStyle(color: Colors.white),
-            behavior: SnackBarBehavior.floating,
-          ),
+    final store = _store;
+    return MaterialApp(
+      title: AppStrings.appName,
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light(),
+      scrollBehavior: const _AppScrollBehavior(),
+      home: store == null
+          ? const _SplashView()
+          : ScheduleScope(store: store, child: const WorkspaceShell()),
+    );
+  }
+}
+
+class _SplashView extends StatelessWidget {
+  const _SplashView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: AppColors.canvas,
+      body: Center(
+        child: SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(strokeWidth: 2),
         ),
-        home: store.settings.schoolId.isEmpty || store.settings.isFirstLaunch
-            ? const WelcomePage()
-            : const HomePage(),
       ),
     );
   }
 }
+
+/// 桌面端也允许鼠标拖动滚动，但不出现拉伸光晕。
+class _AppScrollBehavior extends MaterialScrollBehavior {
+  const _AppScrollBehavior();
+
+  @override
+  Widget buildOverscrollIndicator(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    return child;
+  }
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) {
+    return const ClampingScrollPhysics();
+  }
+}
+
+/// 最小窗口尺寸：窗口缩得太小时内容会被挤扁，这里兜住。
+const Size kMinWindowSize = Size(720, 560);
+
+/// 桌面端首次打开时的窗口大小建议。
+const Size kPreferredWindowSize = Size(1280, 860);
+
+/// 页面统一的水平内边距：窗口宽时留白更多。
+double horizontalPaddingOf(BuildContext context) =>
+    AppMetrics.pagePadding(MediaQuery.sizeOf(context).width);

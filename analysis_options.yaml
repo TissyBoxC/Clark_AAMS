@@ -9,6 +9,13 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+# 旧版界面已整体重做，源码暂时留在 lib/_legacy 里备查，不参与分析；
+# 对应测试也一并停用，等新界面补齐测试后再放开。
+analyzer:
+  exclude:
+    - lib/_legacy/**
+    - test/**
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`

@@ -167,11 +167,7 @@ class ClassScheduleStore extends ChangeNotifier {
           course.copyWith(
             weekPattern: WeekPattern.fromWeeks([
               ...course.activeWeeks,
-              for (
-                var week = oldMaxWeeks + 1;
-                week <= newMaxWeeks;
-                week++
-              )
+              for (var week = oldMaxWeeks + 1; week <= newMaxWeeks; week++)
                 week,
             ]),
           )

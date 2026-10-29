@@ -40,7 +40,8 @@ class ImportOutcome {
   bool get changed => added > 0 || updated > 0;
 
   @override
-  String toString() => 'ImportOutcome(added=$added, updated=$updated, skipped=$skipped)';
+  String toString() =>
+      'ImportOutcome(added=$added, updated=$updated, skipped=$skipped)';
 }
 
 /// 课程身份判定与导入合并策略。

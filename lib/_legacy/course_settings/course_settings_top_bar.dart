@@ -75,8 +75,4 @@ class CourseSettingsTopBar extends StatelessWidget {
 }
 
 /// 顶栏更多菜单的动作。
-enum CourseSettingsMenuAction {
-  importSchedule,
-  batchAdd,
-  batchDelete,
-}
+enum CourseSettingsMenuAction { importSchedule, batchAdd, batchDelete }

@@ -1,0 +1,186 @@
+name: Verify
+
+# 只做验证，不发布：三个平台各跑一遍「分析 + 测试 + 构建」，
+# 确认手机端与桌面端都能真正编译出来。
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------
+  # 静态检查与单元测试：跑一次就够，不必在每个平台重复
+  # ---------------------------------------------------------------
+  analyze:
+    name: 分析与测试
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Clark_AAMS
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 准备 Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.9'
+          channel: stable
+          cache: true
+
+      - name: 安装依赖
+        run: flutter pub get
+
+      - name: 静态分析
+        run: flutter analyze
+
+      - name: 单元测试
+        run: flutter test test/workspace_smoke_test.dart
+
+  # ---------------------------------------------------------------
+  # Windows 桌面端：本机缺 Visual Studio，靠这里验证真实构建
+  # ---------------------------------------------------------------
+  windows:
+    name: Windows 桌面端
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: Clark_AAMS
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 准备 Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.9'
+          channel: stable
+          cache: true
+
+      - name: 安装依赖
+        run: flutter pub get
+
+      - name: 构建桌面端
+        run: flutter build windows --release
+
+      - name: 确认内置浏览器插件已打包
+        shell: pwsh
+        run: |
+          $exe = "build\windows\x64\runner\Release\clark_aams.exe"
+          if (-not (Test-Path $exe)) {
+            Write-Error "没有生成可执行文件：$exe"
+            exit 1
+          }
+          $dll = Get-ChildItem "build\windows\x64\runner\Release" -Filter "*webview*.dll" -Recurse
+          if (-not $dll) {
+            Write-Error "内置浏览器插件没有打进来"
+            exit 1
+          }
+          Write-Host "已生成：$exe"
+          Write-Host "浏览器插件：$($dll.Name -join ', ')"
+
+      - name: 保存构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: Clark_AAMS/build/windows/x64/runner/Release/
+          retention-days: 7
+
+  # ---------------------------------------------------------------
+  # macOS 桌面端
+  # ---------------------------------------------------------------
+  macos:
+    name: macOS 桌面端
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: Clark_AAMS
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 准备 Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.9'
+          channel: stable
+          cache: true
+
+      - name: 安装依赖
+        run: flutter pub get
+
+      - name: 构建桌面端
+        run: flutter build macos --release
+
+  # ---------------------------------------------------------------
+  # Android：确认手机端也能编译
+  # ---------------------------------------------------------------
+  android:
+    name: Android 安装包
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Clark_AAMS
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 准备 JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: 准备 Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.9'
+          channel: stable
+          cache: true
+
+      - name: 安装依赖
+        run: flutter pub get
+
+      - name: 构建安装包
+        run: flutter build apk --debug
+
+      - name: 保存安装包
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-apk
+          path: Clark_AAMS/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 7
+
+  # ---------------------------------------------------------------
+  # Web 端：类型检查 + 构建 + 文案规范
+  # ---------------------------------------------------------------
+  web:
+    name: Web 端
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Clark_AAMS_Frontend
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 准备 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: Clark_AAMS_Frontend/package-lock.json
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 类型检查与构建
+        run: npm run build

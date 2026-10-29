@@ -32,7 +32,8 @@ dependencies:
     sdk: flutter
 
   shared_preferences: ^2.3.3
-  webview_flutter: ^4.7.0
+  # 桌面端与手机端统一使用系统内置浏览器内核（Windows 上是 WebView2/Chromium）。
+  flutter_inappwebview: ^6.1.5
   http: ^1.2.2
   package_info_plus: ^8.0.0
   url_launcher: ^6.3.0
