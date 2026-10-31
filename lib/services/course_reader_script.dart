@@ -102,6 +102,65 @@ class CourseReaderScript {
 })();
 ''';
 
+  /// 取当前正在显示课表的那个 iframe 的地址。
+  ///
+  /// 教务系统常用「框架 + iframe」结构：外层地址始终是首页，
+  /// 用户点导航只是换了 iframe 的内容。这时只读 location.href
+  /// 会一直停在首页，刷新也会跳回首页。
+  ///
+  /// 这里反过来找：哪个 iframe 里有课表表格，就报它的地址。
+  /// 同源才能读，跨域读不到就返回空串，由调用方退回主文档地址。
+  static const String currentFrameUrl = r'''
+(function () {
+  try {
+    var frames = Array.prototype.slice.call(document.querySelectorAll('iframe'));
+    for (var i = 0; i < frames.length; i++) {
+      var frame = frames[i];
+      var src = frame.getAttribute('src') || '';
+      if (!src) {
+        continue;
+      }
+      var doc = null;
+      try {
+        doc = frame.contentDocument;
+      } catch (e) {
+        continue;
+      }
+      if (!doc) {
+        continue;
+      }
+      // 有课表格子的才算，避免把导航栏 iframe 当成课表页
+      var tables = doc.querySelectorAll('table');
+      var hasSchedule = false;
+      for (var t = 0; t < tables.length; t++) {
+        if (tables[t].rows && tables[t].rows.length >= 6) {
+          hasSchedule = true;
+          break;
+        }
+      }
+      if (!hasSchedule) {
+        continue;
+      }
+      try {
+        if (frame.contentWindow && frame.contentWindow.location.href) {
+          return String(frame.contentWindow.location.href);
+        }
+      } catch (e) {
+        // 跨域时取不到内层地址，退回 src
+      }
+      try {
+        return new URL(src, location.href).href;
+      } catch (e) {
+        return src;
+      }
+    }
+    return '';
+  } catch (error) {
+    return '';
+  }
+})();
+''';
+
   /// 使用哪所学校的内置规则；没有专属规则时返回 `null`。
   static CourseReaderRule? ruleFor(String schoolId) => _rules[schoolId];
 

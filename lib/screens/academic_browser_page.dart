@@ -51,6 +51,37 @@ class _AcademicBrowserPageState extends State<AcademicBrowserPage> {
     });
   }
 
+  /// 从 WebView 读回当前真实地址。
+  ///
+  /// 主文档地址往往只是外壳，课表在内嵌页里。这里先取 `currentUrl`，
+  /// 再问一下页面内有没有正在显示课表的 iframe，有就用它的地址——
+  /// 否则地址栏显示的仍是首页，用户看到的就是"链接锁在首页"。
+  Future<void> _syncAddress(InAppWebViewController controller) async {
+    String address = '';
+    try {
+      address = (await controller.getUrl())?.toString() ?? '';
+    } catch (_) {
+      return;
+    }
+
+    // 主文档地址已经有了，再看 iframe。取不到就用主文档地址，不报错。
+    try {
+      final frameUrl = await controller.evaluateJavascript(
+        source: CourseReaderScript.currentFrameUrl,
+      );
+      if (frameUrl is String && frameUrl.trim().isNotEmpty) {
+        address = frameUrl.trim();
+      }
+    } catch (_) {
+      // 跨域读不到 iframe 属正常情况，保留主文档地址
+    }
+
+    if (!mounted || address.isEmpty || address == _address) {
+      return;
+    }
+    setState(() => _address = address);
+  }
+
   Future<void> _readPage() async {
     final controller = _controller;
     if (controller == null) {
@@ -92,12 +123,43 @@ class _AcademicBrowserPageState extends State<AcademicBrowserPage> {
     );
   }
 
+  /// 重读当前页。
+  ///
+  /// 不能用 `reload()`：它重载的是主文档，而课表在内嵌页里，
+  /// 重载等于把人送回首页。这里先问出真实地址，直接导航过去；
+  /// 问不到才退回 reload。
   Future<void> _reload() async {
     setState(() {
       _courses = const [];
       _status = '';
     });
-    await _controller?.reload();
+    final controller = _controller;
+    if (controller == null) {
+      return;
+    }
+
+    String target = '';
+    try {
+      target = (await controller.getUrl())?.toString() ?? '';
+    } catch (_) {
+      target = '';
+    }
+    try {
+      final frameUrl = await controller.evaluateJavascript(
+        source: CourseReaderScript.currentFrameUrl,
+      );
+      if (frameUrl is String && frameUrl.trim().isNotEmpty) {
+        target = frameUrl.trim();
+      }
+    } catch (_) {
+      // 读不到内嵌页就按主文档地址刷新
+    }
+
+    if (target.isEmpty) {
+      await controller.reload();
+      return;
+    }
+    await controller.loadUrl(urlRequest: URLRequest(url: WebUri(target)));
   }
 
   Future<void> _finish() async {
@@ -165,11 +227,23 @@ class _AcademicBrowserPageState extends State<AcademicBrowserPage> {
                       _address = url?.toString() ?? '';
                     });
                   },
-                  onLoadStop: (controller, url) {
+                  onLoadStop: (controller, url) async {
                     setState(() {
                       _loading = false;
                       _address = url?.toString() ?? '';
                     });
+                    // 有的页面加载完才做跳转，这里补读一次真实地址
+                    await _syncAddress(controller);
+                  },
+                  /*
+                   * 教务系统的课表切换多半发生在 iframe 里：地址栏不动，
+                   * 只换 iframe 的 src。此时 onLoadStart/onLoadStop 都不会触发，
+                   * 于是界面已经变了、记录下来的地址还停在首页，
+                   * 刷新又跳回去。这个回调在 iframe 导航和历史变更时也会来，
+                   * 用它把地址同步上。
+                   */
+                  onUpdateVisitedHistory: (controller, url, isReload) async {
+                    await _syncAddress(controller);
                   },
                   onProgressChanged: (controller, progress) {
                     setState(() => _progress = progress / 100);
