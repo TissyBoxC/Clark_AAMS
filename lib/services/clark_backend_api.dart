@@ -126,6 +126,37 @@ class ClarkBackendApi {
     return _parseCourseList(coursesJson);
   }
 
+  /// 直接传页面 HTML 给后端解析。
+  ///
+  /// 这是唯一正确的做法：App 端只负责把页面内容原样交出去，
+  /// 解析规则全部留在后端。理由很实在——后端那套解析器有真实页面样本
+  /// 和 180 多项测试撑着，而 App 里用 JS 现场判断表格是课表还是表头，
+  /// 根本判不准（实测把"星期一/星期二"当成了 7 门课）。
+  ///
+  /// [frames] 用来带上内嵌页的内容：课表常在不带 src 属性的 iframe 里，
+  /// 只传外层 HTML 会拿不到表格。
+  Future<List<Course>> importCoursesFromHtml({
+    required String school,
+    required String schoolName,
+    required String html,
+    List<Map<String, String?>> frames = const [],
+  }) async {
+    final data = await _post('/api/v1/imports/courses/html', {
+      'school': school,
+      'schoolName': schoolName,
+      'html': html,
+      'frames': frames,
+    });
+    if (data is! Map) {
+      throw const ApiException(50003, AppStrings.invalidCourseImportResponse);
+    }
+    final coursesJson = data['courses'];
+    if (coursesJson is! List) {
+      throw const ApiException(50003, AppStrings.invalidCourseDataResponse);
+    }
+    return _parseCourseList(coursesJson);
+  }
+
   Future<CoursePickupResult> recognizeCourseImages(List<File> images) async {
     if (images.isEmpty) {
       throw const ApiException(40001, AppStrings.selectCourseImageFirst);

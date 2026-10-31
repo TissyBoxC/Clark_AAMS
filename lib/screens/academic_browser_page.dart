@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import '../resources/app_colors.dart';
 import '../resources/app_metrics.dart';
 import '../resources/app_strings.dart';
 import '../services/academic_browser.dart';
+import '../services/clark_backend_api.dart';
 import '../services/course_reader_script.dart';
 import '../services/diag_log.dart';
 import '../widgets/app_icons.dart';
@@ -110,6 +112,11 @@ class _AcademicBrowserPageState extends State<AcademicBrowserPage> {
     }
   }
 
+  /// 抓当前页面 HTML，交给后端解析。
+  ///
+  /// App 端不做任何课程解析——只负责把页面原样交出去。
+  /// 之前这里用 JS 在本地判断哪张表是课表，把表头当成了课程，
+  /// 读出 31 门假课。解析规则全部留在后端。
   Future<void> _readPage() async {
     final controller = _controller;
     if (controller == null) {
@@ -119,27 +126,64 @@ class _AcademicBrowserPageState extends State<AcademicBrowserPage> {
     setState(() => _reading = true);
     try {
       final raw = await controller.evaluateJavascript(
-        source: CourseReaderScript.readCourses,
+        source: CourseReaderScript.captureHtml,
       );
       final text = raw is String ? raw : '';
-      // 读取结果原样记下来：读不到时，reason 和 scannedDocs 能直接定位
+      DiagLog.instance.line('抓到页面内容 ${text.length} 字', tag: 'read');
+
+      final decoded = text.isEmpty ? null : jsonDecode(text);
+      if (decoded is! Map) {
+        if (mounted) {
+          setState(() => _status = '这一页读不出来，稍后再试一次。');
+        }
+        return;
+      }
+
+      final html = (decoded['html'] as String?) ?? '';
+      final rawFrames = decoded['frames'];
+      final frames = <Map<String, String?>>[];
+      if (rawFrames is List) {
+        for (final item in rawFrames) {
+          if (item is Map) {
+            frames.add({
+              'src': item['src']?.toString(),
+              'id': item['id']?.toString(),
+              'html': item['html']?.toString(),
+            });
+          }
+        }
+      }
       DiagLog.instance.line(
-        '读取返回（前 500 字）: ${text.length > 500 ? text.substring(0, 500) : text}',
+        '主文档 ${html.length} 字，内嵌页 ${frames.length} 个',
         tag: 'read',
       );
-      final result = AcademicBrowser.interpret(
-        text,
-        maxWeek: widget.maxWeek,
+
+      if (html.isEmpty) {
+        if (mounted) {
+          setState(() => _status = '这一页读不出来，稍后再试一次。');
+        }
+        return;
+      }
+
+      final courses = await ClarkBackendApi.instance.importCoursesFromHtml(
+        school: widget.school.id,
         schoolName: widget.school.name,
+        html: html,
+        frames: frames,
       );
-      DiagLog.instance.line('解析出 ${result.courses.length} 门课', tag: 'read');
+      DiagLog.instance.line('后端解析出 ${courses.length} 门课', tag: 'read');
       if (!mounted) {
         return;
       }
-      if (result.isEmpty) {
-        setState(() => _status = describeReadFailure(text));
+      if (courses.isEmpty) {
+        setState(() => _status = '这一页没读到课程，确认停在课表页再试一次。');
       } else {
-        _applyCourses(result.courses);
+        _applyCourses(courses);
+      }
+    } on ApiException catch (error) {
+      DiagLog.instance.line('后端返回错误 ${error.code}: ${error.message}', tag: 'read');
+      if (mounted) {
+        setState(() => _status = error.message);
       }
     } catch (error, stack) {
       DiagLog.instance.error('读取课表异常', error, stack);

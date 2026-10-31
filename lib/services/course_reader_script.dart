@@ -1,130 +1,15 @@
 import 'dart:convert';
 
-/// 课表解析插件：注入学校页面后读取页面上的课程信息。
+/// 注入学校页面的脚本集合。
 ///
-/// 只在「课表页」里运行，读到的内容一律先折算成纯文本，
-/// 页面自己不再回传任何可执行代码。解析规则集中在这个文件，
-/// 修一所学校只需要改这里的条目。
+/// 这里**不做课程解析**。App 端只负责把页面内容原样交给后端，
+/// 哪张表是课表、怎么切分节次，全部由后端判断。
+///
+/// 之前 App 里用 JS 猜"哪张表是课表"，实测把表头（星期一/星期二…）
+/// 当成了课程，读出 31 门假课。这类规则只应该存在一份，放在后端，
+/// 有真实页面样本和测试撑着。
 class CourseReaderScript {
   const CourseReaderScript._();
-
-  /// 注入到学校页面的读取脚本。
-  ///
-  /// 该脚本做三件事：
-  /// 1. 找出课表所在的表格或列表容器；
-  /// 2. 按星期 × 节次读取每个格子的课程文字；
-  /// 3. 把结果整理成 `{ name, day, start, end, room }` 的数组返回。
-  static const String readCourses = r'''
-(function () {
-  try {
-    var pick = function (node) {
-      return node ? (node.innerText || node.textContent || '').trim() : '';
-    };
-
-    /*
-     * 课表通常在 iframe 里，不在主文档。
-     * 日志实测：登录后主文档 table 数量 = 0，所有表格都在
-     * iframe#iframeautoheight 内层。只查主文档必然读不到，
-     * 返回 no-table —— 这正是"解析不到课表"的根因。
-     *
-     * 挨个 iframe 进去找：主文档先查，再查每一层内嵌页。
-     * 同源才能进，跨域跳过。
-     */
-    var scheduleDocs = [document];
-
-    var collectFrames = function (root) {
-      var frames = root.querySelectorAll('iframe, frame');
-      for (var i = 0; i < frames.length; i++) {
-        var doc = null;
-        try {
-          doc = frames[i].contentDocument;
-        } catch (e) {
-          continue;
-        }
-        if (doc) {
-          scheduleDocs.push(doc);
-        }
-      }
-    };
-    collectFrames(document);
-    // 内嵌页里还可能再嵌一层，一并收进来
-    for (var d = 0; d < scheduleDocs.length && d < 8; d++) {
-      collectFrames(scheduleDocs[d]);
-    }
-
-    var best = null;
-    var bestScore = 0;
-
-    for (var s = 0; s < scheduleDocs.length; s++) {
-      var tables = Array.prototype.slice.call(scheduleDocs[s].querySelectorAll('table'));
-      tables.forEach(function (table) {
-        var rows = table.rows || [];
-        if (rows.length < 6) {
-          return;
-        }
-        var maxCells = 0;
-        for (var i = 0; i < rows.length; i++) {
-          maxCells = Math.max(maxCells, rows[i].cells.length);
-        }
-        var score = maxCells * rows.length;
-        // 正方的课表表格带 class=schedule，优先选它
-        var cls = ' ' + (table.className || '') + ' ';
-        if (cls.indexOf(' schedule ') >= 0) {
-          score = score * 10;
-        }
-        if (maxCells >= 7 && score > bestScore) {
-          bestScore = score;
-          best = table;
-        }
-      });
-    }
-
-    if (!best) {
-      return JSON.stringify({ ok: false, reason: 'no-table' });
-    }
-
-    var lessons = [];
-    var rows = best.rows;
-    for (var r = 0; r < rows.length; r++) {
-      var cells = rows[r].cells;
-      if (!cells || cells.length < 7) {
-        continue;
-      }
-      var headText = pick(cells[0]);
-      var anchor = cells.length >= 8 ? 1 : 0;
-      for (var c = 0; c < Math.min(7, cells.length - anchor); c++) {
-        var cell = cells[c + anchor];
-        var text = pick(cell);
-        if (!text || text.length < 2) {
-          continue;
-        }
-        var rowspan = cell.rowSpan || 1;
-        lessons.push({
-          name: text.split('\n')[0].slice(0, 60),
-          text: text,
-          rowIndex: r,
-          dayIndex: c,
-          span: rowspan,
-          headText: headText,
-        });
-      }
-    }
-
-    return JSON.stringify({
-      ok: true,
-      lessons: lessons,
-      // 表格可能来自内嵌页，标题和地址也跟着取那里的，便于核对读的是哪一页
-      title: (best.ownerDocument && best.ownerDocument.title) || document.title || '',
-      url: (best.ownerDocument && best.ownerDocument.location
-            ? best.ownerDocument.location.href : location.href),
-      // 记下扫过几个文档，排查时一眼能看出有没有进到 iframe
-      scannedDocs: scheduleDocs.length,
-    });
-  } catch (error) {
-    return JSON.stringify({ ok: false, reason: 'script-failed' });
-  }
-})();
-''';
 
   /// 在页面里点开「课表」导航项。
   ///
@@ -379,6 +264,57 @@ class CourseReaderScript {
     return 'not-found';
   } catch (error) {
     return 'failed';
+  }
+})();
+''';
+
+  /// 只抓页面 HTML，交给后端解析。
+  ///
+  /// 这个脚本刻意**不做任何解析**——它只把页面内容原样交出来。
+  /// 判断哪张表是课表、怎么切分节次，全部由后端负责。
+  ///
+  /// 之前 App 里自己用 JS 猜"哪张表是课表"，实测把表头
+  /// （星期一/星期二…）当成了课程，读出 31 门假课。
+  ///
+  /// 返回 `{html, frames:[{src,id,html}]}`：
+  /// - `html` 是主文档的 outerHTML
+  /// - `frames` 是每个同源内嵌页的地址、id 和内容。课表常在有
+  ///   实际内容的 iframe 里，只传外层会拿不到表格。
+  static const String captureHtml = r'''
+(function () {
+  try {
+    var frames = [];
+    var nodes = document.querySelectorAll('iframe, frame');
+    for (var i = 0; i < nodes.length; i++) {
+      var node = nodes[i];
+      var doc = null;
+      try {
+        doc = node.contentDocument;
+      } catch (e) {
+        continue;
+      }
+      if (!doc || !doc.documentElement) {
+        continue;
+      }
+      var inner = '';
+      try {
+        inner = String(node.contentWindow.location.href || '');
+      } catch (e) {
+        inner = '';
+      }
+      frames.push({
+        src: inner || node.getAttribute('src') || '',
+        id: node.id || '',
+        html: doc.documentElement.outerHTML
+      });
+    }
+
+    return JSON.stringify({
+      html: document.documentElement.outerHTML,
+      frames: frames
+    });
+  } catch (error) {
+    return JSON.stringify({ html: '', frames: [], error: String(error) });
   }
 })();
 ''';
