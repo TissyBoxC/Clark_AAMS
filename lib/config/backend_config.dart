@@ -2,7 +2,13 @@ class BackendConfig {
   const BackendConfig._();
 
   static const String scheme = 'https';
-  static const String host = 'clarkhub.cn';
+
+  /*
+   * 后端实际挂在 card 子域上。
+   * 裸域 clarkhub.cn 不做服务（连接直接失败），App 配成裸域就会
+   * 一直报「无法连接服务」。
+   */
+  static const String host = 'card.clarkhub.cn';
   static const int? serverPort = null;
 
   static String get baseUrl => '$scheme://$host';

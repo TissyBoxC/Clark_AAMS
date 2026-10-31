@@ -97,7 +97,7 @@ class MineTab extends StatelessWidget {
               onPressed: () async {
                 Navigator.of(context).pop();
                 await launchUrl(
-                  Uri.parse('https://clarkhub.cn'),
+                  Uri.parse('https://card.clarkhub.cn'),
                   mode: LaunchMode.externalApplication,
                 );
               },
