@@ -112,6 +112,19 @@ class CourseReaderScript {
   /// 同源才能读，跨域读不到就返回空串，由调用方退回主文档地址。
   static const String currentFrameUrl = r'''
 (function () {
+  // 真正的课表表格长这样：table#Table1.schedule。
+  // 首页的 table#Table6（学业进度）行数也不少，光看行数会认错。
+  var looksLikeScheduleDoc = function (doc) {
+    var tables = doc.querySelectorAll('table');
+    for (var t = 0; t < tables.length; t++) {
+      var cls = ' ' + (tables[t].className || '') + ' ';
+      if (cls.indexOf(' schedule ') >= 0 && tables[t].rows && tables[t].rows.length >= 6) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   try {
     var frames = Array.prototype.slice.call(document.querySelectorAll('iframe'));
     for (var i = 0; i < frames.length; i++) {
@@ -129,17 +142,22 @@ class CourseReaderScript {
       if (!doc) {
         continue;
       }
-      // 有课表格子的才算，避免把导航栏 iframe 当成课表页
-      var tables = doc.querySelectorAll('table');
-      var hasSchedule = false;
-      for (var t = 0; t < tables.length; t++) {
-        if (tables[t].rows && tables[t].rows.length >= 6) {
-          hasSchedule = true;
-          break;
-        }
+      /*
+       * 先看内层地址。正方的课表页是 xskbcx.aspx，这个最可靠。
+       * 不能只看"有没有 table"：首页 content_xs.aspx 里的 table#Table6
+       * 也有 7 行（学业进度），按行数判断会在首页就报成课表页。
+       */
+      var inner = '';
+      try {
+        inner = String(frame.contentWindow.location.href || '');
+      } catch (e) {
+        inner = '';
       }
-      if (!hasSchedule) {
-        continue;
+      if (inner.indexOf('xskbcx') < 0) {
+        // 地址读不到或不认识，再退回看有没有真正的课表格子
+        if (!looksLikeScheduleDoc(doc)) {
+          continue;
+        }
       }
       try {
         if (frame.contentWindow && frame.contentWindow.location.href) {
@@ -252,6 +270,10 @@ class CourseReaderScript {
   /// `content_xs.aspx`，不带外层框架传的参数，教务系统会判为无效请求，
   /// 反而把登录弄掉。在页面内部重载 iframe，外层框架和 session 都还在。
   ///
+  /// 判断"哪个 iframe 是课表"不能只看有没有 table：
+  /// 首页的 content_xs.aspx 里也有 table#Table6（7 行，是学业进度），
+  /// 按行数找会在首页误刷。这里改成看内层地址——带 `xskbcx` 的才是课表页。
+  ///
   /// 返回 `reloaded` 表示已发起重载；`not-found` 表示没找到课表 iframe，
   /// 由调用方决定退路。
   static const String reloadScheduleFrame = r'''
@@ -261,31 +283,24 @@ class CourseReaderScript {
     for (var i = 0; i < frames.length; i++) {
       var frame = frames[i];
       var doc = null;
+      var innerUrl = '';
       try {
         doc = frame.contentDocument;
+        innerUrl = frame.contentWindow.location.href || '';
       } catch (e) {
         continue;
       }
-      if (!doc) {
+      if (!doc || !innerUrl) {
         continue;
       }
-      // 只重载有课表表格的那个，别把导航栏也刷了
-      var tables = doc.querySelectorAll('table');
-      var hasSchedule = false;
-      for (var t = 0; t < tables.length; t++) {
-        if (tables[t].rows && tables[t].rows.length >= 6) {
-          hasSchedule = true;
-          break;
-        }
-      }
-      if (!hasSchedule) {
+      // 正方教务的课表页是 xskbcx.aspx，别的页面不是
+      if (innerUrl.indexOf('xskbcx') < 0) {
         continue;
       }
       try {
         frame.contentWindow.location.reload();
         return 'reloaded';
       } catch (e) {
-        // 跨域时改 src 也能触发重载
         var src = frame.getAttribute('src') || '';
         if (src) {
           frame.setAttribute('src', src);

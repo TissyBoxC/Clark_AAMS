@@ -1,0 +1,12 @@
+error: pathspec 'table' did not match any file(s) known to git
+error: pathspec '行数' did not match any file(s) known to git
+error: pathspec '6判断会在首页就当成课表页，刷新时刷错帧。
+改成看内层地址：正方教务的课表页是 xskbcx.aspx，这个最可靠；
+读不到地址时才退回看有没有 table.schedule（不是 Table6）。
+
+二、WebView 不持久化 cookie
+默认是内存态，退出这一页教务系统的登录就没了，下次还得重登。
+加上 initialSettings 开启 sharedCookies/domStorage/cache。
+
+日志还显示了导出时刻 iframe 地址会在 content_xs.aspx 和
+xskbcx.aspx 之间漂移，所以上一版取到的地址本身就不稳定。' did not match any file(s) known to git

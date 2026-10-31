@@ -333,6 +333,21 @@ class _AcademicBrowserPageState extends State<AcademicBrowserPage> {
             child: Stack(
               children: [
                 InAppWebView(
+                  /*
+                   * 让 WebView 把 cookie 存到磁盘。
+                   * 默认是内存态，退出这一页教务系统的登录就没了，
+                   * 下次进还得重新登录。学校系统靠 cookie 认人，
+                   * 存住它，重开时多半还能直接停在已登录状态。
+                   */
+                  initialSettings: InAppWebViewSettings(
+                    thirdPartyCookiesEnabled: true,
+                    sharedCookiesEnabled: true,
+                    cacheEnabled: true,
+                    javaScriptEnabled: true,
+                    domStorageEnabled: true,
+                    databaseEnabled: true,
+                    clearCache: false,
+                  ),
                   initialUrlRequest: widget.school.login.loginUrl.isEmpty
                       ? null
                       : URLRequest(url: WebUri(widget.school.login.loginUrl)),
