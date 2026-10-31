@@ -201,7 +201,11 @@ class _QuestionsPageState extends State<QuestionsPage> {
                         ),
                       ),
                     ),
-                  Row(
+                  // 用 Wrap 而不是 Row：窄屏（如 iPhone SE）上两个按钮
+                  // 并排放不下，Row 会横向溢出，Wrap 会自动换到下一行。
+                  Wrap(
+                    spacing: AppMetrics.sp2,
+                    runSpacing: AppMetrics.sp2,
                     children: [
                       if (_options.length < 6)
                         QuietButton(
@@ -211,7 +215,6 @@ class _QuestionsPageState extends State<QuestionsPage> {
                             () => _options.add(TextEditingController()),
                           ),
                         ),
-                      const SizedBox(width: AppMetrics.sp2),
                       if (_options.length > 2)
                         QuietButton(
                           label: AppStrings.dropOption,

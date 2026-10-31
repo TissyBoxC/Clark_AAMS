@@ -19,6 +19,10 @@ void main() {
   /// 课程配色文件：用颜色区分不同课程，不是品牌色。
   const functionalColorFiles = {r'services\schedule_utils.dart'};
 
+  /// 设计令牌文件：品牌色就定义在这里，本身是靛蓝，
+  /// 按「蓝多于红」判定必然命中，属于规则来源，不参与扫描。
+  const tokenFiles = {r'resources\app_colors.dart'};
+
   /// 规范明确允许的点缀色。判定逻辑是「蓝多于红」，而点缀蓝本来就蓝，
   /// 所以必须单独放行，否则会把合规用法误判成违规。
   const allowedAccents = {'66ccff'};
@@ -30,6 +34,7 @@ void main() {
       for (final entity in Directory('lib').listSync(recursive: true)) {
         if (entity is! File || !entity.path.endsWith('.dart')) continue;
         if (functionalColorFiles.any(entity.path.endsWith)) continue;
+        if (tokenFiles.any(entity.path.endsWith)) continue;
 
         var lines = entity.readAsLinesSync();
         for (var index = 0; index < lines.length; index++) {
@@ -61,19 +66,15 @@ void main() {
       );
     });
 
-    test('主色调仍是品牌粉', () {
-      final theme = File('lib/main.dart').readAsStringSync();
-      expect(theme.toLowerCase(), contains('0xffc93c7d'));
+    test('主色调与网页端一致的靛蓝', () {
+      final colors = File('lib/resources/app_colors.dart').readAsStringSync();
+      expect(colors.toLowerCase(), contains('0xff4f46e5'));
     });
 
-    test('正文色仍是深梅灰', () {
-      final source = Directory('lib')
-          .listSync(recursive: true)
-          .whereType<File>()
-          .where((file) => file.path.endsWith('.dart'))
-          .map((file) => file.readAsStringSync())
-          .join('\n');
-      expect(source.toLowerCase(), contains('0xff4a2e3b'));
+    test('正文色是中性深灰而不是彩色', () {
+      final colors = File('lib/resources/app_colors.dart').readAsStringSync();
+      // 正文色要求中性：三个分量接近，不能偏紫偏蓝。
+      expect(colors.toLowerCase(), contains('0xff23252f'));
     });
   });
 }

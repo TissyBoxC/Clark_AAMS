@@ -192,8 +192,10 @@ class ClassScheduleStore extends ChangeNotifier {
 
   Future<void> _saveSettings() async {
     await _prefs.setString(_settingsKey, jsonEncode(settings.toJson()));
-    await WidgetService.updateWidget();
+    // 先让界面拿到新数据，再去同步桌面小组件。
+    // 小组件是附加功能，不该让界面等它，也不该因为它失败而停止刷新。
     notifyListeners();
+    await WidgetService.updateWidget();
   }
 
   Future<void> _saveCourses() async {
@@ -201,8 +203,8 @@ class ClassScheduleStore extends ChangeNotifier {
       _coursesKey,
       jsonEncode(_courses.map((course) => course.toJson()).toList()),
     );
-    await WidgetService.updateWidget();
     notifyListeners();
+    await WidgetService.updateWidget();
   }
 
   /// 分配下一个课程 id。

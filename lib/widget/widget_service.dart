@@ -35,8 +35,12 @@ class WidgetService {
       return;
     }
 
-    final payload = await _buildPayload();
     try {
+      // _buildPayload 也必须包在 try 里：它依赖已保存的数据，
+      // 数据异常时会抛错，一旦抛在 try 外面，调用方（保存课程/设置）
+      // 会连带失败，界面就一直停在加载状态。桌面小组件是附加功能，
+      // 任何一步出问题都不该影响主流程。
+      final payload = await _buildPayload();
       await HomeWidget.saveWidgetData<String>(
         _widgetDataKey,
         jsonEncode(payload.toJson()),

@@ -192,13 +192,15 @@ class _LessonGutter extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: TimetableGrid._gutterWidth,
+      // 每格高度必须严格等于 _rowHeight，不能再加垂直外边距，
+      // 否则 maxLessons 个格子会比外层给的高度更高，整列溢出。
       child: Column(
         children: [
           for (var lesson = 1; lesson <= maxLessons; lesson++)
             Container(
               height: TimetableGrid._rowHeight,
               alignment: Alignment.center,
-              margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
               decoration: BoxDecoration(
                 color: AppColors.surfaceSunken,
                 borderRadius: BorderRadius.circular(AppMetrics.rSm),

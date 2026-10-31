@@ -44,7 +44,17 @@ class _TermSetupPageState extends State<TermSetupPage> {
     super.initState();
     _termStart = widget.initialTermStartDate;
     _times = _fitTimes(widget.initialStartTimes, widget.lessonCount);
-    _maxWeeks = ScheduleScope.of(context).settings.maxWeeks;
+    // 总周数要从小到大读，放到 didChangeDependencies，initState 里读会直接抛异常。
+    _maxWeeks = widget.lessonCount;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final maxWeeks = ScheduleScope.of(context).settings.maxWeeks;
+    if (maxWeeks > 0) {
+      _maxWeeks = maxWeeks;
+    }
   }
 
   static List<String> _fitTimes(List<String> times, int count) {
