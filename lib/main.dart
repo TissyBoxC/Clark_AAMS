@@ -10,10 +10,14 @@ import 'resources/app_strings.dart';
 import 'resources/app_theme.dart';
 import 'screens/workspace.dart';
 import 'services/class_schedule_store.dart';
+import 'services/diag_log.dart';
 import 'services/schedule_scope.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 诊断日志：排查版会一直开着，正式版这里不会造成负担（写入很轻）
+  await DiagLog.instance.start();
 
   // 桌面端窗口允许自由缩放，先放开系统层面的方向限制。
   if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {

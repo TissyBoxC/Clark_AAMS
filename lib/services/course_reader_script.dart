@@ -161,6 +161,145 @@ class CourseReaderScript {
 })();
 ''';
 
+  /// 页面结构快照：把框架页的骨架完整记下来。
+  ///
+  /// 排查「地址锁在首页」这类问题时，需要知道：有几个 iframe、
+  /// 各自 src 是什么、能不能读到内容、课表到底在哪一层、跨不跨域。
+  /// 这些只能从页面里取，靠猜永远猜不准。
+  static const String dumpStructure = r'''
+(function () {
+  var out = [];
+  var push = function (s) { out.push(s); };
+
+  try {
+    push('location.href = ' + location.href);
+    push('document.title = ' + (document.title || ''));
+    push('readyState = ' + document.readyState);
+
+    var tables = document.querySelectorAll('table');
+    push('主文档 table 数量 = ' + tables.length);
+    for (var t = 0; t < Math.min(tables.length, 5); t++) {
+      push('  table[' + t + '] id=' + (tables[t].id || '-') +
+           ' class=' + (tables[t].className || '-') +
+           ' rows=' + (tables[t].rows ? tables[t].rows.length : 0));
+    }
+
+    var frames = document.querySelectorAll('iframe, frame');
+    push('iframe/frame 数量 = ' + frames.length);
+
+    for (var i = 0; i < frames.length; i++) {
+      var f = frames[i];
+      push('--- frame[' + i + '] ---');
+      push('  tag = ' + f.tagName);
+      push('  id = ' + (f.id || '-'));
+      push('  name = ' + (f.getAttribute('name') || '-'));
+      push('  class = ' + (f.className || '-'));
+      push('  src = ' + (f.getAttribute('src') || '-'));
+
+      var doc = null;
+      var crossOrigin = false;
+      try {
+        doc = f.contentDocument;
+      } catch (e) {
+        crossOrigin = true;
+      }
+      if (!doc) {
+        try {
+          doc = f.contentWindow ? f.contentWindow.document : null;
+        } catch (e) {
+          crossOrigin = true;
+        }
+      }
+
+      if (!doc) {
+        push('  内容: 读不到（跨域或未加载），crossOrigin=' + crossOrigin);
+        continue;
+      }
+
+      var href = '';
+      try {
+        href = f.contentWindow.location.href;
+      } catch (e) {
+        href = '(读不到)';
+      }
+      push('  内层 location = ' + href);
+
+      var innerTables = doc.querySelectorAll('table');
+      push('  内层 table 数量 = ' + innerTables.length);
+      for (var k = 0; k < Math.min(innerTables.length, 5); k++) {
+        push('    table[' + k + '] id=' + (innerTables[k].id || '-') +
+             ' class=' + (innerTables[k].className || '-') +
+             ' rows=' + (innerTables[k].rows ? innerTables[k].rows.length : 0));
+      }
+
+      var body = doc.body;
+      if (body) {
+        var text = (body.innerText || '').replace(/\s+/g, ' ').slice(0, 200);
+        push('  正文前 200 字 = ' + text);
+      }
+    }
+  } catch (e) {
+    push('快照出错: ' + e);
+  }
+
+  return out.join('\n');
+})();
+''';
+
+  /// 只重载显示课表的那个 iframe，不动主文档。
+  ///
+  /// 为什么不用 `loadUrl` 跳到 iframe 地址：iframe 的 src 是裸的
+  /// `content_xs.aspx`，不带外层框架传的参数，教务系统会判为无效请求，
+  /// 反而把登录弄掉。在页面内部重载 iframe，外层框架和 session 都还在。
+  ///
+  /// 返回 `reloaded` 表示已发起重载；`not-found` 表示没找到课表 iframe，
+  /// 由调用方决定退路。
+  static const String reloadScheduleFrame = r'''
+(function () {
+  try {
+    var frames = Array.prototype.slice.call(document.querySelectorAll('iframe, frame'));
+    for (var i = 0; i < frames.length; i++) {
+      var frame = frames[i];
+      var doc = null;
+      try {
+        doc = frame.contentDocument;
+      } catch (e) {
+        continue;
+      }
+      if (!doc) {
+        continue;
+      }
+      // 只重载有课表表格的那个，别把导航栏也刷了
+      var tables = doc.querySelectorAll('table');
+      var hasSchedule = false;
+      for (var t = 0; t < tables.length; t++) {
+        if (tables[t].rows && tables[t].rows.length >= 6) {
+          hasSchedule = true;
+          break;
+        }
+      }
+      if (!hasSchedule) {
+        continue;
+      }
+      try {
+        frame.contentWindow.location.reload();
+        return 'reloaded';
+      } catch (e) {
+        // 跨域时改 src 也能触发重载
+        var src = frame.getAttribute('src') || '';
+        if (src) {
+          frame.setAttribute('src', src);
+          return 'reloaded';
+        }
+      }
+    }
+    return 'not-found';
+  } catch (error) {
+    return 'failed';
+  }
+})();
+''';
+
   /// 使用哪所学校的内置规则；没有专属规则时返回 `null`。
   static CourseReaderRule? ruleFor(String schoolId) => _rules[schoolId];
 
