@@ -29,7 +29,15 @@ class ClarkUser {
   final bool emailVerified;
   final int questionAnalysisCount;
 
-  bool get isAuthenticated => id > 0;
+  /*
+   * id > 0 表示身份已由后端确认；loginCode 非空表示这台设备持有凭据。
+   * 两者满足其一就算已登录。
+   *
+   * 为什么要看登录码：启动时若网络不通，身份核对拿不到 id，
+   * 但用户明明登录过，本地也存着凭据。只看 id 会把人踢回登录页，
+   * 表现就是「关掉应用再打开就掉登录」，可再手动登录一次又能进。
+   */
+  bool get isAuthenticated => id > 0 || loginCode.trim().isNotEmpty;
 
   String get displayName {
     if (username.trim().isNotEmpty) {

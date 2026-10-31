@@ -39,11 +39,37 @@ class AuthSession extends ChangeNotifier {
         _user = ClarkUser.empty;
         _role = UserRole.guest;
       } else {
-        await _loadIdentity();
+        /*
+         * 本地有登录码说明这台设备登录过。先按「已登录」把身份立起来，
+         * 再去后台核对——核对失败（断网、后端不可达）不该把人踢成游客。
+         *
+         * 之前这里整体 try/catch，网络一失败就落到 guest，
+         * 用户看到的就是「关掉应用再打开就掉登录」，可登录码其实还在，
+         * 再手动登录一次又能进——症状完全对得上。
+         */
+        _role = UserRole.user;
+        try {
+          await _loadIdentity();
+        } catch (_) {
+          /*
+           * 核对失败：保留本地登录态，等下次联网时 refresh 再纠正。
+           * 用登录码撑一个临时身份——ClarkUser.isAuthenticated 看的是 id > 0，
+           * 不占位的话 UI 仍会判成未登录，等于白改。
+           * id 给 -1 表示"本地已知、尚未核对"，不与真实用户 id 冲突。
+           */
+          if (!_user.isAuthenticated) {
+            _user = ClarkUser(
+              id: -1,
+              username: '',
+              email: '',
+              loginCode: loginCode,
+              emailBound: false,
+              emailVerified: false,
+              questionAnalysisCount: 0,
+            );
+          }
+        }
       }
-    } catch (_) {
-      _user = ClarkUser.empty;
-      _role = UserRole.guest;
     } finally {
       _initialized = true;
       _setBusy(false);
