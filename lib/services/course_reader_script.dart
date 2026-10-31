@@ -21,25 +21,63 @@ class CourseReaderScript {
       return node ? (node.innerText || node.textContent || '').trim() : '';
     };
 
-    var tables = Array.prototype.slice.call(document.querySelectorAll('table'));
+    /*
+     * 课表通常在 iframe 里，不在主文档。
+     * 日志实测：登录后主文档 table 数量 = 0，所有表格都在
+     * iframe#iframeautoheight 内层。只查主文档必然读不到，
+     * 返回 no-table —— 这正是"解析不到课表"的根因。
+     *
+     * 挨个 iframe 进去找：主文档先查，再查每一层内嵌页。
+     * 同源才能进，跨域跳过。
+     */
+    var scheduleDocs = [document];
+
+    var collectFrames = function (root) {
+      var frames = root.querySelectorAll('iframe, frame');
+      for (var i = 0; i < frames.length; i++) {
+        var doc = null;
+        try {
+          doc = frames[i].contentDocument;
+        } catch (e) {
+          continue;
+        }
+        if (doc) {
+          scheduleDocs.push(doc);
+        }
+      }
+    };
+    collectFrames(document);
+    // 内嵌页里还可能再嵌一层，一并收进来
+    for (var d = 0; d < scheduleDocs.length && d < 8; d++) {
+      collectFrames(scheduleDocs[d]);
+    }
+
     var best = null;
     var bestScore = 0;
 
-    tables.forEach(function (table) {
-      var rows = table.rows || [];
-      if (rows.length < 6) {
-        return;
-      }
-      var maxCells = 0;
-      for (var i = 0; i < rows.length; i++) {
-        maxCells = Math.max(maxCells, rows[i].cells.length);
-      }
-      var score = maxCells * rows.length;
-      if (maxCells >= 7 && score > bestScore) {
-        bestScore = score;
-        best = table;
-      }
-    });
+    for (var s = 0; s < scheduleDocs.length; s++) {
+      var tables = Array.prototype.slice.call(scheduleDocs[s].querySelectorAll('table'));
+      tables.forEach(function (table) {
+        var rows = table.rows || [];
+        if (rows.length < 6) {
+          return;
+        }
+        var maxCells = 0;
+        for (var i = 0; i < rows.length; i++) {
+          maxCells = Math.max(maxCells, rows[i].cells.length);
+        }
+        var score = maxCells * rows.length;
+        // 正方的课表表格带 class=schedule，优先选它
+        var cls = ' ' + (table.className || '') + ' ';
+        if (cls.indexOf(' schedule ') >= 0) {
+          score = score * 10;
+        }
+        if (maxCells >= 7 && score > bestScore) {
+          bestScore = score;
+          best = table;
+        }
+      });
+    }
 
     if (!best) {
       return JSON.stringify({ ok: false, reason: 'no-table' });
@@ -75,8 +113,12 @@ class CourseReaderScript {
     return JSON.stringify({
       ok: true,
       lessons: lessons,
-      title: document.title || '',
-      url: location.href,
+      // 表格可能来自内嵌页，标题和地址也跟着取那里的，便于核对读的是哪一页
+      title: (best.ownerDocument && best.ownerDocument.title) || document.title || '',
+      url: (best.ownerDocument && best.ownerDocument.location
+            ? best.ownerDocument.location.href : location.href),
+      // 记下扫过几个文档，排查时一眼能看出有没有进到 iframe
+      scannedDocs: scheduleDocs.length,
     });
   } catch (error) {
     return JSON.stringify({ ok: false, reason: 'script-failed' });
@@ -84,17 +126,43 @@ class CourseReaderScript {
 })();
 ''';
 
-  /// 在页面里点开一个导航项（例如"我的课表"），找不到就算了。
+  /// 在页面里点开「课表」导航项。
+  ///
+  /// 导航菜单往往在另一个 iframe 里（框架页常见），只查主文档会找不到，
+  /// 所以同样要挨个内嵌页找。找到就点，点完由页面自己去加载课表。
   static const String openScheduleTab = r'''
 (function () {
   var wanted = ['课表', '我的课表', '本学期课表', '学生课表'];
-  var nodes = document.querySelectorAll('a, button, li, span');
-  for (var i = 0; i < nodes.length; i++) {
-    var text = (nodes[i].innerText || '').trim();
-    for (var w = 0; w < wanted.length; w++) {
-      if (text === wanted[w]) {
-        nodes[i].click();
-        return 'clicked';
+
+  var docs = [document];
+  var collect = function (root) {
+    var frames = root.querySelectorAll('iframe, frame');
+    for (var i = 0; i < frames.length; i++) {
+      var doc = null;
+      try {
+        doc = frames[i].contentDocument;
+      } catch (e) {
+        continue;
+      }
+      if (doc) {
+        docs.push(doc);
+      }
+    }
+  };
+  collect(document);
+  for (var d = 0; d < docs.length && d < 8; d++) {
+    collect(docs[d]);
+  }
+
+  for (var s = 0; s < docs.length; s++) {
+    var nodes = docs[s].querySelectorAll('a, button, li, span');
+    for (var i = 0; i < nodes.length; i++) {
+      var text = (nodes[i].innerText || '').trim();
+      for (var w = 0; w < wanted.length; w++) {
+        if (text === wanted[w]) {
+          nodes[i].click();
+          return 'clicked';
+        }
       }
     }
   }

@@ -113,6 +113,7 @@ class _AcademicBrowserPageState extends State<AcademicBrowserPage> {
   Future<void> _readPage() async {
     final controller = _controller;
     if (controller == null) {
+      DiagLog.instance.line('读取课表时 controller 为空', tag: 'read');
       return;
     }
     setState(() => _reading = true);
@@ -121,11 +122,17 @@ class _AcademicBrowserPageState extends State<AcademicBrowserPage> {
         source: CourseReaderScript.readCourses,
       );
       final text = raw is String ? raw : '';
+      // 读取结果原样记下来：读不到时，reason 和 scannedDocs 能直接定位
+      DiagLog.instance.line(
+        '读取返回（前 500 字）: ${text.length > 500 ? text.substring(0, 500) : text}',
+        tag: 'read',
+      );
       final result = AcademicBrowser.interpret(
         text,
         maxWeek: widget.maxWeek,
         schoolName: widget.school.name,
       );
+      DiagLog.instance.line('解析出 ${result.courses.length} 门课', tag: 'read');
       if (!mounted) {
         return;
       }
@@ -134,7 +141,8 @@ class _AcademicBrowserPageState extends State<AcademicBrowserPage> {
       } else {
         _applyCourses(result.courses);
       }
-    } catch (_) {
+    } catch (error, stack) {
+      DiagLog.instance.error('读取课表异常', error, stack);
       if (mounted) {
         setState(() => _status = '这一页读不出来，稍后再试一次。');
       }
