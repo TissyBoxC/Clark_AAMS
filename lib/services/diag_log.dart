@@ -20,12 +20,19 @@ class DiagLog {
   static const String _fileName = 'clark-diag.log';
   static const int _flushThreshold = 20;
 
+  /// 日志超过这个大小就重开一份。
+  ///
+  /// 这是常驻功能了，不能让它无限长下去——手机上占空间、导出时
+  /// 也不好分享。1MB 足够放下最近几次导入的完整过程。
+  static const int _maxBytes = 1024 * 1024;
+
   final List<String> _buffer = [];
   final Stopwatch _clock = Stopwatch()..start();
   IOSink? _sink;
   File? _file;
   bool _enabled = false;
   int _dropped = 0;
+  int _writtenBytes = 0;
 
   /// 日志文件路径；还没初始化或初始化失败时为 null。
   String? get filePath => _file?.path;
@@ -41,10 +48,13 @@ class DiagLog {
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/$_fileName');
       _file = file;
+      // 以清空方式打开：每次启动都是一次新的排查记录，
+      // 留着上次的内容反而要在里面翻找
       _sink = file.openWrite(mode: FileMode.write);
+      _writtenBytes = 0;
       _enabled = true;
       line('========================================');
-      line('ClarK AAMS 诊断日志');
+      line('珂拉课程表 运行日志');
       line('启动时间: ${DateTime.now().toIso8601String()}');
       line('平台: ${Platform.operatingSystem} ${Platform.operatingSystemVersion}');
       line('========================================');
@@ -90,13 +100,38 @@ class DiagLog {
     try {
       for (final row in pending) {
         sink.writeln(row);
+        // 中文按 UTF-8 大致 3 字节估算，够用了；这里只需要判断是否超限
+        _writtenBytes += row.length * 3;
       }
       await sink.flush();
+      if (_writtenBytes > _maxBytes) {
+        await _rotate();
+      }
     } catch (error) {
       if (_dropped < 5) {
         debugPrint('[diag] 写日志失败: $error');
         _dropped++;
       }
+    }
+  }
+
+  /// 超过上限就重开一份，只保留一条说明。
+  ///
+  /// 不做多文件轮转：排查时真正有用的是「最近一次操作」，
+  /// 往前翻很久之前的日志意义不大，还要处理清理。
+  Future<void> _rotate() async {
+    final file = _file;
+    if (file == null) {
+      return;
+    }
+    try {
+      await _sink?.close();
+      _sink = file.openWrite(mode: FileMode.write);
+      _writtenBytes = 0;
+      _sink!.writeln('[${_clock.elapsedMilliseconds} ms][app] '
+          '（日志超过 1MB，已重开一份，之前的内容不再保留）');
+    } catch (error) {
+      debugPrint('[diag] 轮转日志失败: $error');
     }
   }
 

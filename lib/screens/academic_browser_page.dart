@@ -2,9 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../models/course.dart';
 import '../models/school.dart';
@@ -16,6 +14,7 @@ import '../services/clark_backend_api.dart';
 import '../services/course_reader_script.dart';
 import '../services/diag_log.dart';
 import '../widgets/app_icons.dart';
+import '../widgets/run_log_sheet.dart';
 import '../widgets/soft_ui.dart';
 import 'import_preview.dart';
 
@@ -246,82 +245,28 @@ class _AcademicBrowserPageState extends State<AcademicBrowserPage> {
     await controller.reload();
   }
 
-  /// 导出诊断日志。
+  /// 查看运行记录。
   ///
-  /// 导出前先补抓一次当前页面结构和地址——用户点这个按钮的时刻，
-  /// 正好是"界面已经跳到课表了"的那一刻，这份现场比任何历史记录都值钱。
+  /// 展示前先补抓一次当前页面结构和地址——用户点这个按钮的时刻，
+  /// 正好是问题发生的那一刻，这份现场比任何历史记录都值钱。
   Future<void> _exportLog() async {
-    final controller = _controller;
-    if (controller != null) {
-      DiagLog.instance.line('=== 用户导出日志，抓取现场 ===', tag: 'export');
-      await _syncAddress(controller);
-      await _dumpPageStructure(controller);
-      try {
-        final current = await controller.getUrl();
-        DiagLog.instance.line('导出时 getUrl = $current', tag: 'export');
-      } catch (error, stack) {
-        DiagLog.instance.error('导出时 getUrl 失败', error, stack);
-      }
-    }
-
-    await DiagLog.instance.flush();
-    final content = await DiagLog.instance.readAll();
-
-    if (!mounted) {
-      return;
-    }
-    // 对话框关掉之后要用页面自己的 context 弹提示，先取出来
-    final messenger = ScaffoldMessenger.of(context);
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('诊断日志'),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 320,
-          child: SingleChildScrollView(
-            child: SelectableText(
-              content,
-              style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: content));
-              // 复制是异步的，回来之后对话框可能已经没了，先确认还在
-              if (!dialogContext.mounted) {
-                return;
-              }
-              Navigator.of(dialogContext).pop();
-              messenger.showSnackBar(
-                const SnackBar(content: Text('已复制，粘贴发给我就行')),
-              );
-            },
-            child: const Text('复制全文'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final path = DiagLog.instance.filePath;
-              if (path == null) {
-                return;
-              }
-              await SharePlus.instance.share(
-                ShareParams(
-                  files: [XFile(path)],
-                  text: '珂拉课程表诊断日志',
-                ),
-              );
-            },
-            child: const Text('分享文件'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('关闭'),
-          ),
-        ],
-      ),
+    await RunLogSheet.show(
+      context,
+      captureBefore: () async {
+        final controller = _controller;
+        if (controller == null) {
+          return;
+        }
+        DiagLog.instance.line('=== 用户导出日志，抓取现场 ===', tag: 'export');
+        await _syncAddress(controller);
+        await _dumpPageStructure(controller);
+        try {
+          final current = await controller.getUrl();
+          DiagLog.instance.line('导出时 getUrl = $current', tag: 'export');
+        } catch (error, stack) {
+          DiagLog.instance.error('导出时 getUrl 失败', error, stack);
+        }
+      },
     );
   }
 
@@ -349,7 +294,7 @@ class _AcademicBrowserPageState extends State<AcademicBrowserPage> {
         ),
         actions: [
           IconButton(
-            tooltip: '导出诊断日志',
+            tooltip: '查看运行记录',
             icon: const Icon(AppIcons.copy),
             onPressed: _exportLog,
           ),

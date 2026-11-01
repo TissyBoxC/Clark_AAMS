@@ -230,6 +230,10 @@ class AppStrings {
   static const courseSettingsSubtitle = '增删课程、调整周次与节次';
   static const aboutTitle = '关于';
   static const aboutSubtitle = '版本、作者与开源信息';
+  static const runLogTitle = '运行记录';
+  static const runLogSubtitle = '遇到问题时，把这里的内容发给我';
+  static const runLogHint = '这是最近一次操作的记录。遇到问题时把它发给我，能帮我定位。';
+  static const runLogShareText = '珂拉课程表 运行记录';
   static const termFirstDayLabel = '开学第一天';
   static const notSet = '未设置';
   static const lessonTimesLabel = '上课时间';

@@ -13,6 +13,7 @@ import '../services/schedule_scope.dart';
 import '../services/schedule_utils.dart';
 import '../widgets/app_icons.dart';
 import '../widgets/feedback.dart';
+import '../widgets/run_log_sheet.dart';
 import '../widgets/soft_ui.dart';
 import 'auth_page.dart';
 import 'course_settings_page.dart';
@@ -479,6 +480,15 @@ class _AboutCardState extends State<_AboutCard> {
               label: AppStrings.checkUpdate,
               icon: AppIcons.refresh,
               onPressed: _checking ? null : _checkUpdate,
+            ),
+          ),
+          const SizedBox(height: AppMetrics.sp2),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: QuietButton(
+              label: AppStrings.runLogTitle,
+              icon: AppIcons.copy,
+              onPressed: () => RunLogSheet.show(context),
             ),
           ),
         ],
