@@ -7,16 +7,18 @@ import '../resources/app_metrics.dart';
 import '../resources/app_strings.dart';
 import '../services/schedule_utils.dart';
 
-/// 七列课表。
+/// 七列课表。手机上一屏看完一周七天，不再横向滚动。
 ///
-/// 手机上横向滚动（每列最少 96 像素，挤不下就滚动，绝不压缩到看不清）；
-/// 桌面端窗口变宽后自动铺满，不再滚动。
+/// 手机上宽度只有 360~430，固定 96 像素一天必然要横向滚，
+/// 用户就看不到整周。这里改成按可用宽度均分七列，行高也按屏幕高度收缩，
+/// 保证「一周所有课都在这屏里」。宽屏窗口够大时行高回到舒适值。
 class TimetableGrid extends StatelessWidget {
   const TimetableGrid({
     required this.settings,
     required this.courses,
     required this.week,
     required this.maxLessons,
+    this.fitToHeight = false,
     this.onCourseTap,
     super.key,
   });
@@ -25,68 +27,88 @@ class TimetableGrid extends StatelessWidget {
   final List<Course> courses;
   final int week;
   final int maxLessons;
+
+  /// 为 true 时把整张表压进父级给的可用高度（手机端用）。
+  final bool fitToHeight;
   final ValueChanged<Course>? onCourseTap;
 
+  /// 舒适行高：宽屏窗口里每节课的格子高度。
   static const double _rowHeight = 62;
-  static const double _minDayWidth = 96;
-  static const double _gutterWidth = 46;
+
+  /// 手机上一节课格子的最小高度，再小就放不下课程名。
+  static const double _minRowHeight = 34;
+
+  static const double _minGutterWidth = 22;
+  static const double _maxGutterWidth = 46;
+
+  /// 七列各自最小宽度：手机上一列就是屏幕宽减节次列后平分。
+  static const double _headerHeight = 52;
 
   @override
   Widget build(BuildContext context) {
-    final visible = courses
-        .where((course) => course.matchesWeek(week))
-        .toList();
+    final visible = courses.where((course) => course.matchesWeek(week)).toList();
     final today = DateTime.now().weekday;
-    final tableWidth = _gutterWidth + _minDayWidth * 7;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final available = constraints.maxWidth;
-        final width = available > tableWidth ? available : tableWidth;
+        // 手机宽度窄，节次列跟着收窄，剩余宽度平分给七天。
+        final gutterWidth = available >= 560
+            ? _maxGutterWidth
+            : _minGutterWidth;
+        final dayWidth = (available - gutterWidth) / 7;
 
-        final table = SizedBox(
-          width: width,
-          child: Column(
-            children: [
-              _DayHeaderRow(
+        var rowHeight = _rowHeight;
+        if (fitToHeight && constraints.maxHeight.isFinite) {
+          final usable = constraints.maxHeight - _headerHeight - AppMetrics.sp2;
+          final fitted = usable / maxLessons;
+          // 下限要跟着可用高度走：320 宽的窄屏上可用高度只有 470 左右，
+          // 若强行保底 _minRowHeight（34），13 节课总高会超出容器并溢出。
+          final minRow = _minRowHeight < fitted ? _minRowHeight : fitted;
+          rowHeight = fitted.clamp(minRow, _rowHeight);
+        }
+
+        return Column(
+          children: [
+            SizedBox(
+              height: _headerHeight,
+              child: _DayHeaderRow(
                 settings: settings,
                 week: week,
                 today: today,
-                dayWidth: (width - _gutterWidth) / 7,
+                gutterWidth: gutterWidth,
+                dayWidth: dayWidth,
               ),
-              const SizedBox(height: AppMetrics.sp2),
-              SizedBox(
-                height: _rowHeight * maxLessons,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _LessonGutter(maxLessons: maxLessons),
-                    for (var day = 1; day <= 7; day++)
-                      SizedBox(
-                        width: (width - _gutterWidth) / 7,
-                        child: _DayColumn(
-                          height: _rowHeight * maxLessons,
-                          courses: visible
-                              .where((c) => c.dayOfWeek == day)
-                              .toList(),
-                          maxLessons: maxLessons,
-                          settings: settings,
-                          onCourseTap: onCourseTap,
-                        ),
+            ),
+            const SizedBox(height: AppMetrics.sp2),
+            SizedBox(
+              height: rowHeight * maxLessons,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _LessonGutter(
+                    maxLessons: maxLessons,
+                    width: gutterWidth,
+                    rowHeight: rowHeight,
+                  ),
+                  for (var day = 1; day <= 7; day++)
+                    SizedBox(
+                      width: dayWidth,
+                      child: _DayColumn(
+                        height: rowHeight * maxLessons,
+                        rowHeight: rowHeight,
+                        courses: visible
+                            .where((c) => c.dayOfWeek == day)
+                            .toList(),
+                        maxLessons: maxLessons,
+                        settings: settings,
+                        onCourseTap: onCourseTap,
                       ),
-                  ],
-                ),
+                    ),
+                ],
               ),
-            ],
-          ),
-        );
-
-        if (available >= tableWidth) {
-          return table;
-        }
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: table,
+            ),
+          ],
         );
       },
     );
@@ -98,12 +120,14 @@ class _DayHeaderRow extends StatelessWidget {
     required this.settings,
     required this.week,
     required this.today,
+    required this.gutterWidth,
     required this.dayWidth,
   });
 
   final AppSettingsModel settings;
   final int week;
   final int today;
+  final double gutterWidth;
   final double dayWidth;
 
   @override
@@ -113,7 +137,7 @@ class _DayHeaderRow extends StatelessWidget {
     return Row(
       children: [
         SizedBox(
-          width: TimetableGrid._gutterWidth,
+          width: gutterWidth,
           child: Text(
             AppStrings.monthText(monday.month),
             textAlign: TextAlign.center,
@@ -152,27 +176,36 @@ class _DayHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 3),
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 2),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       decoration: BoxDecoration(
         color: highlighted ? AppColors.brand050 : Colors.transparent,
-        borderRadius: BorderRadius.circular(AppMetrics.rMd),
-        border: highlighted ? Border.all(color: AppColors.brand200) : null,
+        borderRadius: BorderRadius.circular(AppMetrics.rSm),
+        border: highlighted
+            ? Border.all(color: AppColors.brand200)
+            : null,
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: AppMetrics.tiny,
+              fontSize: 11,
+              height: 1.1,
               fontWeight: FontWeight.w600,
               color: highlighted ? AppColors.brand700 : AppColors.ink500,
             ),
           ),
           Text(
             '${date.day}',
+            maxLines: 1,
             style: TextStyle(
-              fontSize: AppMetrics.small,
+              fontSize: 12,
+              height: 1.1,
               fontWeight: FontWeight.w600,
               color: highlighted ? AppColors.brand700 : AppColors.ink900,
             ),
@@ -184,31 +217,36 @@ class _DayHeader extends StatelessWidget {
 }
 
 class _LessonGutter extends StatelessWidget {
-  const _LessonGutter({required this.maxLessons});
+  const _LessonGutter({
+    required this.maxLessons,
+    required this.width,
+    required this.rowHeight,
+  });
 
   final int maxLessons;
+  final double width;
+  final double rowHeight;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: TimetableGrid._gutterWidth,
-      // 每格高度必须严格等于 _rowHeight，不能再加垂直外边距，
+      width: width,
+      // 每格高度必须严格等于 rowHeight，不能再加垂直外边距，
       // 否则 maxLessons 个格子会比外层给的高度更高，整列溢出。
       child: Column(
         children: [
           for (var lesson = 1; lesson <= maxLessons; lesson++)
             Container(
-              height: TimetableGrid._rowHeight,
+              height: rowHeight,
               alignment: Alignment.center,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
               decoration: BoxDecoration(
                 color: AppColors.surfaceSunken,
                 borderRadius: BorderRadius.circular(AppMetrics.rSm),
               ),
               child: Text(
                 '$lesson',
-                style: const TextStyle(
-                  fontSize: AppMetrics.tiny,
+                style: TextStyle(
+                  fontSize: width < 30 ? 10 : AppMetrics.tiny,
                   fontWeight: FontWeight.w600,
                   color: AppColors.ink500,
                 ),
@@ -223,6 +261,7 @@ class _LessonGutter extends StatelessWidget {
 class _DayColumn extends StatelessWidget {
   const _DayColumn({
     required this.height,
+    required this.rowHeight,
     required this.courses,
     required this.maxLessons,
     required this.settings,
@@ -230,6 +269,7 @@ class _DayColumn extends StatelessWidget {
   });
 
   final double height;
+  final double rowHeight;
   final List<Course> courses;
   final int maxLessons;
   final AppSettingsModel settings;
@@ -247,10 +287,10 @@ class _DayColumn extends StatelessWidget {
           // 底格：给每一节留一个浅色位置，空着也看得出"这一节没有课"
           for (var lesson = 1; lesson <= maxLessons; lesson++)
             Positioned(
-              top: (lesson - 1) * TimetableGrid._rowHeight + 2,
-              left: 3,
-              right: 3,
-              height: TimetableGrid._rowHeight - 4,
+              top: (lesson - 1) * rowHeight + 1,
+              left: 2,
+              right: 2,
+              height: rowHeight - 2,
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: AppColors.surfaceSunken.withValues(alpha: 0.55),
@@ -261,13 +301,13 @@ class _DayColumn extends StatelessWidget {
           for (final course in sorted)
             if (course.startLesson <= maxLessons && course.endLesson >= 1)
               Positioned(
-                top: (_start(course) - 1) * TimetableGrid._rowHeight + 2,
-                left: 3,
-                right: 3,
-                height: _span(course) * TimetableGrid._rowHeight - 4,
+                top: (_start(course) - 1) * rowHeight + 1,
+                left: 2,
+                right: 2,
+                height: _span(course) * rowHeight - 2,
                 child: _CourseBlock(
                   course: course,
-                  settings: settings,
+                  rowHeight: rowHeight,
                   onTap: onCourseTap,
                 ),
               ),
@@ -288,12 +328,12 @@ class _DayColumn extends StatelessWidget {
 class _CourseBlock extends StatelessWidget {
   const _CourseBlock({
     required this.course,
-    required this.settings,
+    required this.rowHeight,
     required this.onTap,
   });
 
   final Course course;
-  final AppSettingsModel settings;
+  final double rowHeight;
   final ValueChanged<Course>? onTap;
 
   @override
@@ -301,8 +341,9 @@ class _CourseBlock extends StatelessWidget {
     final tone = AppColors.courseTone(
       course.name.codeUnits.fold<int>(0, (a, b) => a + b),
     );
-    final showLocation =
-        course.duration > 1 && course.location.trim().isNotEmpty;
+    // 格子太矮时不塞第二行文字，否则文字会被裁掉一半。
+    final roomy = course.duration > 1 && rowHeight * course.duration >= 56;
+    final showLocation = roomy && course.location.trim().isNotEmpty;
 
     return Material(
       color: tone[0],
@@ -311,30 +352,32 @@ class _CourseBlock extends StatelessWidget {
       child: InkWell(
         onTap: onTap == null ? null : () => onTap!(course),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                course.name,
-                maxLines: showLocation ? 2 : course.duration * 3,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 12,
-                  height: 1.25,
-                  fontWeight: FontWeight.w600,
-                  color: tone[1],
+              Flexible(
+                child: Text(
+                  course.name,
+                  maxLines: showLocation ? 2 : course.duration * 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    height: 1.2,
+                    fontWeight: FontWeight.w600,
+                    color: tone[1],
+                  ),
                 ),
               ),
               if (showLocation) ...[
-                const SizedBox(height: 2),
+                const SizedBox(height: 1),
                 Text(
                   course.location.trim(),
-                  maxLines: course.duration * 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 10,
-                    height: 1.2,
+                    fontSize: 9,
+                    height: 1.1,
                     color: tone[1].withValues(alpha: 0.78),
                   ),
                 ),

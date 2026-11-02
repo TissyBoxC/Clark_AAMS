@@ -62,15 +62,18 @@ class _ClarkAppState extends State<ClarkApp> {
   @override
   Widget build(BuildContext context) {
     final store = _store;
-    return MaterialApp(
+    final app = MaterialApp(
       title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       scrollBehavior: const _AppScrollBehavior(),
-      home: store == null
-          ? const _SplashView()
-          : ScheduleScope(store: store, child: const WorkspaceShell()),
+      home: store == null ? const _SplashView() : const WorkspaceShell(),
     );
+
+    // Scope 必须包在 MaterialApp 外面：Navigator 推出的课程设置、
+    // 学期设置等新路由不是 WorkspaceShell 的子节点，放在 home 内会
+    // 让这些页面读取 ScheduleScope 时直接抛异常，表现为灰屏。
+    return store == null ? app : ScheduleScope(store: store, child: app);
   }
 }
 

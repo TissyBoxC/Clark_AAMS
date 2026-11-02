@@ -32,10 +32,13 @@ class _CourseSettingsPageState extends State<CourseSettingsPage> {
       appBar: AppBar(
         title: const Text(AppStrings.courseSettingsTitle),
         actions: [
-          IconButton(
-            tooltip: AppStrings.addCourse,
-            icon: const Icon(AppIcons.plus),
-            onPressed: () => showCourseEditor(context),
+          Padding(
+            padding: const EdgeInsets.only(right: AppMetrics.sp3),
+            child: QuietButton(
+              label: AppStrings.addCourse,
+              icon: AppIcons.plus,
+              onPressed: () => showCourseEditor(context),
+            ),
           ),
         ],
       ),
